@@ -1,0 +1,12 @@
+c:\users\fcampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.exe.config
+c:\users\fcampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.csprojResolveAssemblyReference.cache
+c:\users\fcampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\DiagnosticTool.GUIViews.AboutBox1.resources
+c:\users\fcampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\DiagnosticTool.GUIViews.EEPROMView.resources
+c:\users\fcampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\DiagnosticTool.GUIViews.ExtendedPIDSView.resources
+c:\users\fcampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\DiagnosticTool.GUIViews.PowerICView.resources
+c:\users\fcampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.Properties.Resources.resources
+c:\users\fcampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.csproj.GenerateResource.Cache
+c:\users\fcampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.exe
+c:\users\fcampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.pdb
+c:\users\fcampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.exe
+c:\users\fcampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.pdb

@@ -1,0 +1,23 @@
+C:\Users\FCampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.exe.config
+C:\Users\FCampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.exe
+C:\Users\FCampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.pdb
+C:\Users\FCampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.exe
+C:\Users\FCampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.pdb
+C:\Users\FCampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\BlueBoxTool.csprojResolveAssemblyReference.cache
+C:\Users\FCampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\DiagnosticTool.GUIViews.AboutBox1.resources
+C:\Users\FCampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\DiagnosticTool.GUIViews.ExtendedPIDSView.resources
+C:\Users\FCampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.Properties.Resources.resources
+C:\Users\FCampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\BlueBoxTool.csproj.GenerateResource.Cache
+C:\Users\FCampos\documents\visual studio 2015\Projects\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\BlueBoxTool.MainView.resources
+C:\Users\RCastanon\Documents\04 - Common Tools\AVCLAN\AVCLAN_BlueBoxTool\AVCLAN_BlueBoxTool\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.exe.config
+C:\Users\RCastanon\Documents\04 - Common Tools\AVCLAN\AVCLAN_BlueBoxTool\AVCLAN_BlueBoxTool\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.exe
+C:\Users\RCastanon\Documents\04 - Common Tools\AVCLAN\AVCLAN_BlueBoxTool\AVCLAN_BlueBoxTool\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.pdb
+C:\Users\RCastanon\Documents\04 - Common Tools\AVCLAN\AVCLAN_BlueBoxTool\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\BlueBoxTool.csprojResolveAssemblyReference.cache
+C:\Users\RCastanon\Documents\04 - Common Tools\AVCLAN\AVCLAN_BlueBoxTool\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\DiagnosticTool.GUIViews.AboutBox1.resources
+C:\Users\RCastanon\Documents\04 - Common Tools\AVCLAN\AVCLAN_BlueBoxTool\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\DiagnosticTool.GUIViews.ExtendedPIDSView.resources
+C:\Users\RCastanon\Documents\04 - Common Tools\AVCLAN\AVCLAN_BlueBoxTool\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\BlueBoxTool.MainView.resources
+C:\Users\RCastanon\Documents\04 - Common Tools\AVCLAN\AVCLAN_BlueBoxTool\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.Properties.Resources.resources
+C:\Users\RCastanon\Documents\04 - Common Tools\AVCLAN\AVCLAN_BlueBoxTool\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\BlueBoxTool.csproj.GenerateResource.Cache
+C:\Users\RCastanon\Documents\04 - Common Tools\AVCLAN\AVCLAN_BlueBoxTool\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\BlueBoxTool.csproj.CoreCompileInputs.cache
+C:\Users\RCastanon\Documents\04 - Common Tools\AVCLAN\AVCLAN_BlueBoxTool\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.exe
+C:\Users\RCastanon\Documents\04 - Common Tools\AVCLAN\AVCLAN_BlueBoxTool\AVCLAN_BlueBoxTool\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.pdb

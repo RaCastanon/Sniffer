@@ -277,10 +277,44 @@ namespace DiagnosticTool.GUIViews
             return valid_message;
         }
 
+        private bool sendMessageSequence()
+        {
+            bool valid_message = false;
+            //string message = txtBoxMessage.Text;
+            string process_message_1 = "0101000804400025749D01";
+            string process_message_2 = "0101000804400025749C01";
+
+            if ((process_message_1.Length > 0) && ByteUtilities.isHexString(process_message_1) && ((process_message_1.Length % 2) == 0))
+            {
+                //Message One
+                SLIPMessage slip_message_1 = new SLIPMessage(ByteUtilities.HexToByte(process_message_1));
+                MessageContainer message_to_send_1 = new MessageContainer(slip_message_1, MessageType.TX_TO_DEVICE);
+                SendMessageHandler(message_to_send_1);
+                //Message Two
+                SLIPMessage slip_message_2 = new SLIPMessage(ByteUtilities.HexToByte(process_message_2));
+                MessageContainer message_to_send_2 = new MessageContainer(slip_message_2, MessageType.TX_TO_DEVICE);
+                SendMessageHandler(message_to_send_2);
+                valid_message = true;
+            }
+            return valid_message;
+        }
+
         private void timerEvent(object sender, EventArgs e)
         {
             if ((CurrentViewStatus == ViewStatus.ENABLE) && (CurrentCommunicationStatus == CommunicationStatus.ENABLE))
             {
+                string process_message = txtBoxMessage.Text;
+                if ((process_message.Length > 0) && ("10" == process_message))
+                {
+                    //Using a sequence of messages
+                    sendMessageSequence();
+                }
+                else
+                {
+                    //Using the textbox
+                    sendMessageAction();
+                }
+                //Using the textbox
                 sendMessageAction();
             }
         }

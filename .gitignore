@@ -4,3 +4,6 @@
 *.ide-shm
 *.ide-wal
 *.sln
+*.pdb
+*.Cache
+*.txt

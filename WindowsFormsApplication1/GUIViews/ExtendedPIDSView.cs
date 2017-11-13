@@ -280,20 +280,35 @@ namespace DiagnosticTool.GUIViews
         private bool sendMessageSequence()
         {
             bool valid_message = false;
-            //string message = txtBoxMessage.Text;
-            string process_message_1 = "0101000804400025749D01";
-            string process_message_2 = "0101000804400025749C01";
+            /*
+             * Vol up msg     = 0101000804400025749D01
+             * Vol down msg   = 0101000804400025749C01
+             * Prep msg       = 010100080440005601BA00
+             * Exec msg       = 010100080440005601BA01
+             * Source change  = 0101000804400011748E62
+             * Src change msg = 
+             */
+            string process_message_1 = "010100080440005601BA00";
+            string process_message_2 = "010100080440005601BA01";
+            string process_message_3 = "0101000704400011748E62";
 
             if ((process_message_1.Length > 0) && ByteUtilities.isHexString(process_message_1) && ((process_message_1.Length % 2) == 0))
             {
+                System.Threading.Thread.Sleep(100);
                 //Message One
                 SLIPMessage slip_message_1 = new SLIPMessage(ByteUtilities.HexToByte(process_message_1));
                 MessageContainer message_to_send_1 = new MessageContainer(slip_message_1, MessageType.TX_TO_DEVICE);
                 SendMessageHandler(message_to_send_1);
+                System.Threading.Thread.Sleep(100);
                 //Message Two
                 SLIPMessage slip_message_2 = new SLIPMessage(ByteUtilities.HexToByte(process_message_2));
                 MessageContainer message_to_send_2 = new MessageContainer(slip_message_2, MessageType.TX_TO_DEVICE);
                 SendMessageHandler(message_to_send_2);
+                System.Threading.Thread.Sleep(100);
+                //Message Three
+                SLIPMessage slip_message_3 = new SLIPMessage(ByteUtilities.HexToByte(process_message_3));
+                MessageContainer message_to_send_3 = new MessageContainer(slip_message_3, MessageType.TX_TO_DEVICE);
+                SendMessageHandler(message_to_send_3);
                 valid_message = true;
             }
             return valid_message;

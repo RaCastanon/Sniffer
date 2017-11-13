@@ -18,9 +18,11 @@ namespace DiagnosticTool.GUIViews
         private SendAVCLANMessage SendMessageHandler;
         private DisplayFormatData DisplayDataHandler;
         private Timer PeriodicMessageTimer;
+        private Timer ProcessTimer;
         private Dictionary<int, string> TimeSettings;
         /* Logic related variables */
         private byte[] NodeAVCLANAddress = null;
+        private uint StateStep = 0;
 
         /// <summary>
         /// 
@@ -35,6 +37,11 @@ namespace DiagnosticTool.GUIViews
             PeriodicMessageTimer = new Timer();
             PeriodicMessageTimer.Tick += new EventHandler(timerEvent);
             PeriodicMessageTimer.Enabled = false;
+
+            ProcessTimer = new Timer();
+            ProcessTimer.Tick += new EventHandler(processTimerEvent);
+            ProcessTimer.Interval = 10;
+            ProcessTimer.Enabled = false;
 
             // configure time settings combobox
             TimeSettings = new Dictionary<int, string>();
@@ -231,6 +238,8 @@ namespace DiagnosticTool.GUIViews
                         PeriodicMessageTimer.Interval = periodic_time;
                         PeriodicMessageTimer.Start();
                         PeriodicMessageTimer.Enabled = true;
+                        ProcessTimer.Start();
+                        ProcessTimer.Enabled = true;
                     }
                     else
                     {
@@ -246,6 +255,8 @@ namespace DiagnosticTool.GUIViews
                     // Stop timer
                     PeriodicMessageTimer.Stop();
                     PeriodicMessageTimer.Enabled = false;
+                    ProcessTimer.Stop();
+                    ProcessTimer.Enabled = false;
                 }
             }
             else
@@ -258,6 +269,8 @@ namespace DiagnosticTool.GUIViews
                 // Stop timer
                 PeriodicMessageTimer.Stop();
                 PeriodicMessageTimer.Enabled = false;
+                ProcessTimer.Stop();
+                ProcessTimer.Enabled = false;
             }
         }
 
@@ -277,6 +290,16 @@ namespace DiagnosticTool.GUIViews
             return valid_message;
         }
 
+        private void sendMessage(string slipHexMsg)
+        {
+            if ((slipHexMsg.Length > 0) && ByteUtilities.isHexString(slipHexMsg) && ((slipHexMsg.Length % 2) == 0))
+            {
+                SLIPMessage slip_message = new SLIPMessage(ByteUtilities.HexToByte(slipHexMsg));
+                MessageContainer message_to_send = new MessageContainer(slip_message, MessageType.TX_TO_DEVICE);
+                SendMessageHandler(message_to_send);
+            }           
+        }
+
         private bool sendMessageSequence()
         {
             bool valid_message = false;
@@ -288,29 +311,22 @@ namespace DiagnosticTool.GUIViews
              * Source change  = 0101000804400011748E62
              * Src change msg = 
              */
-            string process_message_1 = "010100080440005601BA00";
-            string process_message_2 = "010100080440005601BA01";
+            string process_message_1 = "010100070440005601BA00";
+            string process_message_2 = "010100070440005601BA01";
             string process_message_3 = "0101000704400011748E62";
 
-            if ((process_message_1.Length > 0) && ByteUtilities.isHexString(process_message_1) && ((process_message_1.Length % 2) == 0))
-            {
-                System.Threading.Thread.Sleep(100);
-                //Message One
-                SLIPMessage slip_message_1 = new SLIPMessage(ByteUtilities.HexToByte(process_message_1));
-                MessageContainer message_to_send_1 = new MessageContainer(slip_message_1, MessageType.TX_TO_DEVICE);
-                SendMessageHandler(message_to_send_1);
-                System.Threading.Thread.Sleep(100);
-                //Message Two
-                SLIPMessage slip_message_2 = new SLIPMessage(ByteUtilities.HexToByte(process_message_2));
-                MessageContainer message_to_send_2 = new MessageContainer(slip_message_2, MessageType.TX_TO_DEVICE);
-                SendMessageHandler(message_to_send_2);
-                System.Threading.Thread.Sleep(100);
-                //Message Three
-                SLIPMessage slip_message_3 = new SLIPMessage(ByteUtilities.HexToByte(process_message_3));
-                MessageContainer message_to_send_3 = new MessageContainer(slip_message_3, MessageType.TX_TO_DEVICE);
-                SendMessageHandler(message_to_send_3);
-                valid_message = true;
-            }
+            
+            System.Threading.Thread.Sleep(100);
+            //Message One
+            sendMessage(process_message_1);
+            System.Threading.Thread.Sleep(100);
+            //Message Two
+            sendMessage(process_message_2);
+            System.Threading.Thread.Sleep(100);
+            //Message Three
+            sendMessage(process_message_3);
+            valid_message = true;
+            
             return valid_message;
         }
 
@@ -321,17 +337,45 @@ namespace DiagnosticTool.GUIViews
                 string process_message = txtBoxMessage.Text;
                 if ((process_message.Length > 0) && ("10" == process_message))
                 {
-                    //Using a sequence of messages
-                    sendMessageSequence();
-                }
-                else
-                {
-                    //Using the textbox
-                    sendMessageAction();
-                }
-                //Using the textbox
-                sendMessageAction();
+                    StateStep = 0;
+                    ProcessTimer.Enabled = true;
+                }                
             }
+        }
+
+        private void processTimerEvent(object sender, EventArgs e)
+        {
+            string process_message_1 = "010100070440005601BA00";
+            string process_message_2 = "010100070440005601BA01";
+            string process_message_3 = "0101000704400011748E62";
+
+            switch (StateStep)
+            {
+                case 0:
+                    sendMessage(process_message_1);
+                    ProcessTimer.Interval = 100;
+                    StateStep = 1;
+                    break;
+
+                case 1:
+                    sendMessage(process_message_2);
+                    ProcessTimer.Interval = 100;
+                    StateStep = 2;
+                    break;
+
+                case 2:
+                    sendMessage(process_message_3);
+                    ProcessTimer.Interval = 100;
+                    StateStep = 3;
+                    ProcessTimer.Enabled = false;
+                    break;
+
+                case 3:
+                    break;
+
+            }
+
+
         }
     }
 }

@@ -25,6 +25,8 @@ namespace DiagnosticTool.GUIViews
         private byte[] NodeAVCLANAddress = null;
         private uint StateStep = 0;
         private uint vol_cnt = 0;
+        private uint InitialStep = 0;
+        private byte[] F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E };
 
         /// <summary>
         /// 
@@ -46,7 +48,7 @@ namespace DiagnosticTool.GUIViews
             testCase_1.Enabled = false;
 
             testCase_2 = new Timer();
-            testCase_2.Tick += new EventHandler(testCase_1_TimerEvent);
+            testCase_2.Tick += new EventHandler(testCase_2_TimerEvent);
             testCase_2.Interval = 100;
             testCase_2.Enabled = false;
 
@@ -101,6 +103,7 @@ namespace DiagnosticTool.GUIViews
         private void printSlipMessage(GUI_MessageType message_type, SLIPMessage message)
         {
             BlueBoxMessage bb_message = new BlueBoxMessage(message);
+            bool isStatusDifferent = false;
             
             if (BlueBoxMessage.TX_FRAME_CMD == bb_message.MessageType)
             {
@@ -113,6 +116,14 @@ namespace DiagnosticTool.GUIViews
                 MessageRX_FRAME_IND message_rx = MessageRX_FRAME_IND.getObject(bb_message, NodeAVCLANAddress);
                 DisplayDataHandler.displayData(message_type,
                     bb_message.TimeStampString + " - " + message_rx.ToString() + CRLF);
+
+                isStatusDifferent = CompareMessage(bb_message.MessageData, bb_message.MessageLength);
+
+                if(isStatusDifferent)
+                {
+                    DisplayDataHandler.displayData(DiagnosticTool.GUIViews.GUI_MessageType.Error, "Expected:" + BitConverter.ToString(F5_Status).Replace("-", " ") + CRLF);
+                }
+
             }
             else if (BlueBoxMessage.INTF_CNTRL_CMD == bb_message.MessageType)
             {
@@ -245,6 +256,7 @@ namespace DiagnosticTool.GUIViews
                         PeriodicMessageTimer.Interval = periodic_time;
                         PeriodicMessageTimer.Start();
                         PeriodicMessageTimer.Enabled = true;
+                        InitialStep = 0;
                     }
                     else
                     {
@@ -311,6 +323,23 @@ namespace DiagnosticTool.GUIViews
             }           
         }
 
+        private bool CompareMessage(byte[] message, int lenght)
+        {
+            uint index;
+
+            if ((message[2] == 0x74) && (message[3] == 0x31) && (message[4] == 0xF5))
+            {
+                for(index = 2; index < lenght; index++)
+                {
+                    if (message[index] != F5_Status[index])
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         private void timerEvent(object sender, EventArgs e)
         {
             if ((CurrentViewStatus == ViewStatus.ENABLE) && (CurrentCommunicationStatus == CommunicationStatus.ENABLE))
@@ -328,7 +357,10 @@ namespace DiagnosticTool.GUIViews
                             break;
 
                         case "0010":
-                            StateStep = 0;
+                            StateStep = InitialStep;
+                            testCase_2.Interval = 10;
+                            testCase_2.Start();
+                            testCase_2.Enabled = true;
                             break;
 
                         case "0011":
@@ -356,16 +388,16 @@ namespace DiagnosticTool.GUIViews
              * Source change  = 010100080440006D74F603  ///HF_device_03
              * Source change  = 010100080440006D74F604  ///HF_device_04
              */
-            string prep_msg        = "010100070440005601BA00";
-            string exec_msg        = "010100070440005601BA01";
-            string HF_TalkSrc_msg  = "0101000704400011748E6D";
-            string vol_down_msg    = "0101000704400025749D01";
-            string vol_up_msg      = "0101000704400025749C01";
-            string HF_dev0_msg     = "010100080440006D74F600";
-            string HF_dev1_msg     = "010100080440006D74F601";
-            string HF_dev2_msg     = "010100080440006D74F602";
-            string HF_dev3_msg     = "010100080440006D74F603";
-            string HF_dev4_msg     = "010100080440006D74F604";
+            string prep_msg = "010100070440005601BA00";
+            string exec_msg = "010100070440005601BA01";
+            string HF_TalkSrc_msg = "0101000704400011748E6D";
+            string vol_down_msg = "0101000704400025749D01";
+            string vol_up_msg = "0101000704400025749C01";
+            string HF_dev0_msg = "010100080440006D74F600";
+            string HF_dev1_msg = "010100080440006D74F601";
+            string HF_dev2_msg = "010100080440006D74F602";
+            string HF_dev3_msg = "010100080440006D74F603";
+            string HF_dev4_msg = "010100080440006D74F604";
 
             switch (StateStep)
             {
@@ -392,7 +424,7 @@ namespace DiagnosticTool.GUIViews
                 case 4: //Vol up command
                     sendMessage(vol_up_msg);
                     vol_cnt++;
-                    if(5 <= vol_cnt)
+                    if (5 <= vol_cnt)
                     {
                         StateStep++;
                         vol_cnt = 0;
@@ -462,6 +494,70 @@ namespace DiagnosticTool.GUIViews
                 default:
                     testCase_1.Enabled = false;
                     break;
+            }
+        }
+
+        private void testCase_2_TimerEvent(object sender, EventArgs e)
+        {
+            string PersonalInitPrep_msg = "010100070440005601BA00";
+            string PersonalInitExce_msg = "010100070440005601BA01";
+            string SourceCDP_msg = "0101000704400011748E62";
+            string SourceHFTone_msg = "0101000704400011748EC6";
+            string SourceHFTalk_msg = "0101000704400011748E6D";
+            string SelectHFDevice0_msg = "010100070440006D749300";
+            string SelectHFDevice1_msg = "010100070440006D749301";
+            string SelectHFDevice2_msg = "010100070440006D749302";
+            string SelectHFDevice3_msg = "010100070440006D749303";
+            string SelectHFDevice4_msg = "010100070440006D749304";
+            string SelectHFDevice5_msg = "010100070440006D749305";
+            string VolumeUp_msg = "0101000704400025749C01";
+            string VolumeDown_msg = "0101000704400025749D01";
+
+            switch (StateStep)
+            {
+                case 0:
+                    sendMessage(SourceHFTone_msg);
+                    testCase_2.Interval = 100;
+                    StateStep = 1;
+
+                    InitialStep = 2;
+                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E };
+                    break;
+
+                case 1:
+                    sendMessage(SelectHFDevice0_msg);
+                    testCase_2.Interval = 100;
+                    StateStep = 2;
+                    break;
+
+                /* Test Steps*/
+                case 2:
+                    sendMessage(VolumeUp_msg);                    
+                    testCase_2.Interval = 50;
+                    StateStep = 3;
+                    break;
+
+                case 3:
+                    sendMessage(SourceHFTalk_msg);
+                    testCase_2.Interval = 50;
+                    StateStep = 4;
+                    break;
+
+                case 4:
+                    sendMessage(VolumeUp_msg);
+                    testCase_2.Interval = 50;
+                    StateStep = 5;
+                    break;
+
+                case 5:
+                    sendMessage(SourceHFTone_msg);
+                    testCase_2.Interval = 50;
+                    StateStep = 6;
+                    break;
+
+                default:
+                    break;
+
             }
         }
     }

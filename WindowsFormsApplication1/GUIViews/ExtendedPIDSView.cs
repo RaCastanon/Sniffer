@@ -18,7 +18,8 @@ namespace DiagnosticTool.GUIViews
         private SendAVCLANMessage SendMessageHandler;
         private DisplayFormatData DisplayDataHandler;
         private Timer PeriodicMessageTimer;
-        private Timer ProcessTimer;
+        private Timer testCase_1;
+        private Timer testCase_2;
         private Dictionary<int, string> TimeSettings;
         /* Logic related variables */
         private byte[] NodeAVCLANAddress = null;
@@ -38,10 +39,15 @@ namespace DiagnosticTool.GUIViews
             PeriodicMessageTimer.Tick += new EventHandler(timerEvent);
             PeriodicMessageTimer.Enabled = false;
 
-            ProcessTimer = new Timer();
-            ProcessTimer.Tick += new EventHandler(processTimerEvent);
-            ProcessTimer.Interval = 10;
-            ProcessTimer.Enabled = false;
+            testCase_1 = new Timer();
+            testCase_1.Tick += new EventHandler(testCase_1_TimerEvent);
+            testCase_1.Interval = 100;
+            testCase_1.Enabled = false;
+
+            testCase_2 = new Timer();
+            testCase_2.Tick += new EventHandler(testCase_1_TimerEvent);
+            testCase_2.Interval = 100;
+            testCase_2.Enabled = false;
 
             // configure time settings combobox
             TimeSettings = new Dictionary<int, string>();
@@ -238,8 +244,6 @@ namespace DiagnosticTool.GUIViews
                         PeriodicMessageTimer.Interval = periodic_time;
                         PeriodicMessageTimer.Start();
                         PeriodicMessageTimer.Enabled = true;
-                        ProcessTimer.Start();
-                        ProcessTimer.Enabled = true;
                     }
                     else
                     {
@@ -252,11 +256,14 @@ namespace DiagnosticTool.GUIViews
                     cmbBoxTimeUnit.Enabled = true;
                     numUpDwnTime.Enabled = true;
                     txtBoxMessage.Enabled = true;
-                    // Stop timer
+                    // Stop timers
                     PeriodicMessageTimer.Stop();
                     PeriodicMessageTimer.Enabled = false;
-                    ProcessTimer.Stop();
-                    ProcessTimer.Enabled = false;
+                    testCase_1.Stop();
+                    testCase_1.Enabled = false;
+                    testCase_2.Stop();
+                    testCase_2.Enabled = false;
+                    StateStep = 0;
                 }
             }
             else
@@ -269,8 +276,11 @@ namespace DiagnosticTool.GUIViews
                 // Stop timer
                 PeriodicMessageTimer.Stop();
                 PeriodicMessageTimer.Enabled = false;
-                ProcessTimer.Stop();
-                ProcessTimer.Enabled = false;
+                testCase_1.Stop();
+                testCase_1.Enabled = false;
+                testCase_2.Stop();
+                testCase_2.Enabled = false;
+                StateStep = 0;
             }
         }
 
@@ -300,82 +310,83 @@ namespace DiagnosticTool.GUIViews
             }           
         }
 
-        private bool sendMessageSequence()
-        {
-            bool valid_message = false;
-            /*
-             * Vol up msg     = 0101000804400025749D01
-             * Vol down msg   = 0101000804400025749C01
-             * Prep msg       = 010100080440005601BA00
-             * Exec msg       = 010100080440005601BA01
-             * Source change  = 0101000804400011748E62
-             * Src change msg = 
-             */
-            string process_message_1 = "010100070440005601BA00";
-            string process_message_2 = "010100070440005601BA01";
-            string process_message_3 = "0101000704400011748E62";
-
-            
-            System.Threading.Thread.Sleep(100);
-            //Message One
-            sendMessage(process_message_1);
-            System.Threading.Thread.Sleep(100);
-            //Message Two
-            sendMessage(process_message_2);
-            System.Threading.Thread.Sleep(100);
-            //Message Three
-            sendMessage(process_message_3);
-            valid_message = true;
-            
-            return valid_message;
-        }
-
         private void timerEvent(object sender, EventArgs e)
         {
             if ((CurrentViewStatus == ViewStatus.ENABLE) && (CurrentCommunicationStatus == CommunicationStatus.ENABLE))
             {
-                string process_message = txtBoxMessage.Text;
-                if ((process_message.Length > 0) && ("10" == process_message))
+                //Test case order
+                string testCase = txtBoxMessage.Text;
+                if(0 < testCase.Length)
                 {
-                    StateStep = 0;
-                    ProcessTimer.Enabled = true;
-                }                
+                    switch(testCase)
+                    {
+                        case "0001":
+                            StateStep = 0;
+                            testCase_1.Start();
+                            testCase_1.Enabled = true;
+                            break;
+
+                        case "0010":
+                            StateStep = 0;
+                            break;
+
+                        case "0011":
+                            break;
+
+                        default:
+                            break;
+                    }
+                }               
             }
         }
 
-        private void processTimerEvent(object sender, EventArgs e)
+        private void testCase_1_TimerEvent(object sender, EventArgs e)
         {
-            string process_message_1 = "010100070440005601BA00";
-            string process_message_2 = "010100070440005601BA01";
-            string process_message_3 = "0101000704400011748E62";
+            /*
+             * Vol up msg     = 0101000804400025749D01
+             * Vol down msg   = 0101000804400025749C01
+             * Prep msg       = 010100070440005601BA00
+             * Exec msg       = 010100070440005601BA01
+             * Source change  = 0101000704400011748E6D  ///HF_Talk
+             * Source change  = 0101000704400011748EC6  ///HF_Ring
+             * Source change  = 010100080440006D74F600  ///HF_device_00
+             * Source change  = 010100080440006D74F601  ///HF_device_01
+             * Source change  = 010100080440006D74F602  ///HF_device_02
+             * Source change  = 010100080440006D74F603  ///HF_device_03
+             * Source change  = 010100080440006D74F604  ///HF_device_04
+             */
+            string prep_msg      = "010100070440005601BA00";
+            string exec_msg      = "010100070440005601BA01";
+            string HF_dev0_msg   = "0101000704400011748E6D";
+            string vol_up_msg    = "0101000704400025749D01";
+            string vol_down_msg  = "0101000704400025749C01";
 
             switch (StateStep)
             {
                 case 0:
-                    sendMessage(process_message_1);
-                    ProcessTimer.Interval = 100;
-                    StateStep = 1;
+                    sendMessage(prep_msg);
+                    StateStep++;
                     break;
 
                 case 1:
-                    sendMessage(process_message_2);
-                    ProcessTimer.Interval = 100;
-                    StateStep = 2;
+                    sendMessage(exec_msg);
+                    StateStep++;
                     break;
 
                 case 2:
-                    sendMessage(process_message_3);
-                    ProcessTimer.Interval = 100;
-                    StateStep = 3;
-                    ProcessTimer.Enabled = false;
+                    sendMessage(HF_dev0_msg);
+                    StateStep++;
                     break;
 
                 case 3:
+                    sendMessage(vol_up_msg);
+                    StateStep++;
                     break;
 
+                default:
+                    testCase_1.Enabled = false;
+                    break;
             }
-
-
         }
     }
 }

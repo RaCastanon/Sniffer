@@ -24,6 +24,7 @@ namespace DiagnosticTool.GUIViews
         /* Logic related variables */
         private byte[] NodeAVCLANAddress = null;
         private uint StateStep = 0;
+        private uint vol_cnt = 0;
 
         /// <summary>
         /// 
@@ -355,32 +356,107 @@ namespace DiagnosticTool.GUIViews
              * Source change  = 010100080440006D74F603  ///HF_device_03
              * Source change  = 010100080440006D74F604  ///HF_device_04
              */
-            string prep_msg      = "010100070440005601BA00";
-            string exec_msg      = "010100070440005601BA01";
-            string HF_dev0_msg   = "0101000704400011748E6D";
-            string vol_up_msg    = "0101000704400025749D01";
-            string vol_down_msg  = "0101000704400025749C01";
+            string prep_msg        = "010100070440005601BA00";
+            string exec_msg        = "010100070440005601BA01";
+            string HF_TalkSrc_msg  = "0101000704400011748E6D";
+            string vol_down_msg    = "0101000704400025749D01";
+            string vol_up_msg      = "0101000704400025749C01";
+            string HF_dev0_msg     = "010100080440006D74F600";
+            string HF_dev1_msg     = "010100080440006D74F601";
+            string HF_dev2_msg     = "010100080440006D74F602";
+            string HF_dev3_msg     = "010100080440006D74F603";
+            string HF_dev4_msg     = "010100080440006D74F604";
 
             switch (StateStep)
             {
-                case 0:
+                case 0: //Prep command
                     sendMessage(prep_msg);
                     StateStep++;
                     break;
 
-                case 1:
+                case 1: //Execute command
                     sendMessage(exec_msg);
                     StateStep++;
                     break;
 
-                case 2:
-                    sendMessage(HF_dev0_msg);
+                case 2: //Set HF source cmd
+                    sendMessage(HF_TalkSrc_msg);
                     StateStep++;
                     break;
 
                 case 3:
-                    sendMessage(vol_up_msg);
+                    sendMessage(HF_dev0_msg);
                     StateStep++;
+                    break;
+
+                case 4: //Vol up command
+                    sendMessage(vol_up_msg);
+                    vol_cnt++;
+                    if(5 <= vol_cnt)
+                    {
+                        StateStep++;
+                        vol_cnt = 0;
+                    }
+                    break;
+
+                case 5: //Change device
+                    sendMessage(HF_dev1_msg);
+                    StateStep++;
+                    break;
+
+                case 6: //Vol up command
+                    sendMessage(vol_up_msg);
+                    vol_cnt++;
+                    if (5 <= vol_cnt)
+                    {
+                        StateStep++;
+                        vol_cnt = 0;
+                    }
+                    break;
+
+                case 7: //Change device
+                    sendMessage(HF_dev2_msg);
+                    StateStep++;
+                    break;
+
+                case 8: //Vol up command
+                    sendMessage(vol_up_msg);
+                    vol_cnt++;
+                    if (5 <= vol_cnt)
+                    {
+                        StateStep++;
+                        vol_cnt = 0;
+                    }
+                    break;
+
+                case 9: //Change device
+                    sendMessage(HF_dev3_msg);
+                    StateStep++;
+                    break;
+
+                case 10: //Vol up command
+                    sendMessage(vol_up_msg);
+                    vol_cnt++;
+                    if (5 <= vol_cnt)
+                    {
+                        StateStep++;
+                        vol_cnt = 0;
+                    }
+                    break;
+
+                case 11: //Change device
+                    sendMessage(HF_dev4_msg);
+                    StateStep++;
+                    break;
+
+                case 12: //Vol up command
+                    sendMessage(vol_up_msg);
+                    vol_cnt++;
+                    if (5 <= vol_cnt)
+                    {
+                        StateStep++;
+                        vol_cnt = 0;
+                    }
                     break;
 
                 default:

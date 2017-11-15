@@ -27,13 +27,19 @@ namespace DiagnosticTool.GUIViews
         private uint StateStep = 0;
         private uint vol_cnt = 0;
         private uint InitialStep = 0;
-        private byte[] F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E }; /*Volume response*/
-        private byte[] Source_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x11, 0x8F, 0x00, 0x00}; /* Source change response*/
+        private byte[] F5_Status = new byte[18];
+        private byte[] Source_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x11, 0x8F, 0x06D, 0x00}; /* Source change response*/
         private byte[] Device_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x6D, 0x83, 0x00}; /* HF device change response*/
         private int upDown = 1; /* 0 = down, 1 = up */
         private int HFdevice = 0; /* Range 0 - 5 */
         private int audioSource; /* 0 = TONE, 1 = TALK */
         private bool response_rx = false;
+
+        private uint vol_dev_00 = 0x1E;
+        private uint vol_dev_01 = 0x1E;
+        private uint vol_dev_02 = 0x1E;
+        private uint vol_dev_03 = 0x1E;
+        private uint vol_dev_04 = 0x1E;
 
         /// <summary>
         /// 
@@ -115,7 +121,6 @@ namespace DiagnosticTool.GUIViews
         private void printSlipMessage(GUI_MessageType message_type, SLIPMessage message)
         {
             BlueBoxMessage bb_message = new BlueBoxMessage(message);
-            bool isStatusDifferent = false;
             
             if (BlueBoxMessage.TX_FRAME_CMD == bb_message.MessageType)
             {
@@ -336,7 +341,6 @@ namespace DiagnosticTool.GUIViews
         private void CompareMessage(byte[] message, int lenght)
         {
             uint index;
-
             if ((message[2] == 0x74) && (message[3] == 0x31) && (message[4] == 0xF5))
             {
                 for(index = 2; index < lenght; index++)
@@ -352,7 +356,6 @@ namespace DiagnosticTool.GUIViews
             if ((message[3] == 0x74) && (message[4] == 0x11) && (message[5] == 0x8F))
             {
                 response_rx = true;
-
                 for (index = 3; index < lenght; index++)
                 {
                     if (message[index] != Source_Status[index])
@@ -361,13 +364,11 @@ namespace DiagnosticTool.GUIViews
                         return;
                     }
                 }
-                
             }
 
             if ((message[3] == 0x74) && (message[4] == 0x6D) && (message[5] == 0x83))
             {
                 response_rx = true;
-
                 for (index = 3; index < lenght; index++)
                 {
                     if (message[index] != Device_Status[index])
@@ -377,7 +378,6 @@ namespace DiagnosticTool.GUIViews
                     }
                 }                
             }
-
         }
 
         private void timerEvent(object sender, EventArgs e)
@@ -391,7 +391,7 @@ namespace DiagnosticTool.GUIViews
                     switch(testCase)
                     {
                         case "0001":
-                            StateStep = 0;
+                            StateStep = InitialStep;
                             testCase_1.Start();
                             testCase_1.Enabled = true;
                             break;
@@ -432,16 +432,15 @@ namespace DiagnosticTool.GUIViews
              * Source change  = 010100080440006D74F603  ///HF_device_03
              * Source change  = 010100080440006D74F604  ///HF_device_04
              */
-            string prep_msg = "010100070440005601BA00";
-            string exec_msg = "010100070440005601BA01";
+            string prep_msg       = "010100070440005601BA00";
+            string exec_msg       = "010100070440005601BA01";
             string HF_TalkSrc_msg = "0101000704400011748E6D";
-            string vol_down_msg = "0101000704400025749D01";
-            string vol_up_msg = "0101000704400025749C01";
-            string HF_dev0_msg = "010100080440006D74F600";
-            string HF_dev1_msg = "010100080440006D74F601";
-            string HF_dev2_msg = "010100080440006D74F602";
-            string HF_dev3_msg = "010100080440006D74F603";
-            string HF_dev4_msg = "010100080440006D74F604";
+            string vol_up_msg     = "0101000704400025749C01";
+            string HF_dev0_msg    = "010100070440006D74F600";
+            string HF_dev1_msg    = "010100070440006D74F601";
+            string HF_dev2_msg    = "010100070440006D74F602";
+            string HF_dev3_msg    = "010100070440006D74F603";
+            string HF_dev4_msg    = "010100070440006D74F604";
 
             switch (StateStep)
             {
@@ -456,11 +455,12 @@ namespace DiagnosticTool.GUIViews
                     break;
 
                 case 2: //Set HF source cmd
+                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, (byte)vol_dev_04, 0x1E, (byte)vol_dev_03, 0x1E, (byte)vol_dev_02, 0x1E, (byte)vol_dev_01, 0x1E, (byte)vol_dev_00, 0x1E, 0x1E }; /*Volume response*/
                     sendMessage(HF_TalkSrc_msg);
                     StateStep++;
                     break;
 
-                case 3:
+                case 3: //Set device 0 (Talk)
                     sendMessage(HF_dev0_msg);
                     StateStep++;
                     break;
@@ -468,10 +468,12 @@ namespace DiagnosticTool.GUIViews
                 case 4: //Vol up command
                     sendMessage(vol_up_msg);
                     vol_cnt++;
+                    vol_dev_00++;
+                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, (byte)vol_dev_04, 0x1E, (byte)vol_dev_03, 0x1E, (byte)vol_dev_02, 0x1E, (byte)vol_dev_01, 0x1E, (byte)vol_dev_00, 0x1E, 0x1E}; /*Volume response*/
                     if (5 <= vol_cnt)
                     {
                         StateStep++;
-                        vol_cnt = 0;
+                        vol_cnt = 0;    
                     }
                     break;
 
@@ -483,11 +485,13 @@ namespace DiagnosticTool.GUIViews
                 case 6: //Vol up command
                     sendMessage(vol_up_msg);
                     vol_cnt++;
+                    vol_dev_01++;
                     if (5 <= vol_cnt)
                     {
                         StateStep++;
                         vol_cnt = 0;
                     }
+                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, (byte)vol_dev_04, 0x1E, (byte)vol_dev_03, 0x1E, (byte)vol_dev_02, 0x1E, (byte)vol_dev_01, 0x1E, (byte)vol_dev_00, 0x1E, 0x1E }; /*Volume response*/
                     break;
 
                 case 7: //Change device
@@ -498,11 +502,13 @@ namespace DiagnosticTool.GUIViews
                 case 8: //Vol up command
                     sendMessage(vol_up_msg);
                     vol_cnt++;
+                    vol_dev_02++;
                     if (5 <= vol_cnt)
                     {
                         StateStep++;
                         vol_cnt = 0;
                     }
+                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, (byte)vol_dev_04, 0x1E, (byte)vol_dev_03, 0x1E, (byte)vol_dev_02, 0x1E, (byte)vol_dev_01, 0x1E, (byte)vol_dev_00, 0x1E, 0x1E }; /*Volume response*/
                     break;
 
                 case 9: //Change device
@@ -513,11 +519,13 @@ namespace DiagnosticTool.GUIViews
                 case 10: //Vol up command
                     sendMessage(vol_up_msg);
                     vol_cnt++;
+                    vol_dev_03++;
                     if (5 <= vol_cnt)
                     {
                         StateStep++;
                         vol_cnt = 0;
                     }
+                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, (byte)vol_dev_04, 0x1E, (byte)vol_dev_03, 0x1E, (byte)vol_dev_02, 0x1E, (byte)vol_dev_01, 0x1E, (byte)vol_dev_00, 0x1E, 0x1E }; /*Volume response*/
                     break;
 
                 case 11: //Change device
@@ -528,15 +536,18 @@ namespace DiagnosticTool.GUIViews
                 case 12: //Vol up command
                     sendMessage(vol_up_msg);
                     vol_cnt++;
+                    vol_dev_04++;
                     if (5 <= vol_cnt)
                     {
                         StateStep++;
                         vol_cnt = 0;
                     }
+                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, (byte)vol_dev_04, 0x1E, (byte)vol_dev_03, 0x1E, (byte)vol_dev_02, 0x1E, (byte)vol_dev_01, 0x1E, (byte)vol_dev_00, 0x1E, 0x1E }; /*Volume response*/
                     break;
 
                 default:
                     testCase_1.Enabled = false;
+                    InitialStep = 2;
                     break;
             }
         }

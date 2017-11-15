@@ -11,6 +11,7 @@ namespace DiagnosticTool.GUIViews
 {
     public partial class ExtendedPIDSView : UserControl , ViewInterface
     {
+        public byte Source;
         /* GUI related variables */
         private static string CRLF = "\r\n";
         private ViewStatus CurrentViewStatus;
@@ -27,8 +28,8 @@ namespace DiagnosticTool.GUIViews
         private uint StateStep = 0;
         private uint vol_cnt = 0;
         private uint InitialStep = 0;
-        private byte[] F5_Status = new byte[18];
-        private byte[] Source_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x11, 0x8F, 0x06D, 0x00}; /* Source change response*/
+        private byte[] F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E }; /*Volume response*/
+        private byte[] Source_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x11, 0x8F, 0x00, 0x00}; /* Source change response*/
         private byte[] Device_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x6D, 0x83, 0x00}; /* HF device change response*/
         private int upDown = 1; /* 0 = down, 1 = up */
         private int HFdevice = 0; /* Range 0 - 5 */
@@ -702,12 +703,14 @@ namespace DiagnosticTool.GUIViews
                     {
                         case 0:
                             sendMessage(SourceHFTalk_msg);
+                            Source = 0x6D;
                             Source_Status[6] = 0x6D;
                             audioSource = 1;
                             break;
 
                         case 1:
                             sendMessage(SourceHFTone_msg);
+                            Source = 0xC6;
                             Source_Status[6] = 0xC6;
                             audioSource = 0;
                             break;

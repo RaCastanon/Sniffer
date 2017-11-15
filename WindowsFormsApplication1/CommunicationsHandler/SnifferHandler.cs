@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ViewsHandler;
+using DiagnosticTool.GUIViews;
 
 namespace CommunicationsHandler
 {
@@ -23,14 +24,21 @@ namespace CommunicationsHandler
         private SendAVCLANMessage SendAVCLANMessageHandler;
         private CommunicationStatus AVCLANCommunicationStatus;
         private static AutoResetEvent SnifferTxMessageWaitSemaphore = new AutoResetEvent(false);
+        private ExtendedPIDSView ExtendedPIDSView;
+
+        private static byte[] HFTone = new byte[] { 0x01, 0x01, 0x00, 0x06, 0x0F, 0xFF, 0x11, 0x01, 0x45, 0xC6 };
+        private static byte[] HFTalk = new byte[] { 0x01, 0x01, 0x00, 0x06, 0x0F, 0xFF, 0x11, 0x01, 0x45, 0x6D };
+        private SLIPMessage HFToneSlip = new SLIPMessage(HFTone);
+        private SLIPMessage HFTalkSlip = new SLIPMessage(HFTalk);
 
         /// <summary>
         /// 
         /// </summary>
-        public SnifferHandler()
+        public SnifferHandler(ExtendedPIDSView pids)
         {
             AVCLANCommunicationStatus = CommunicationStatus.DISABLE;
             AVCLAN_MessagesToSend = new Queue<MessageContainer>();
+            ExtendedPIDSView = pids;
         }
 
         /// <summary>
@@ -165,8 +173,29 @@ namespace CommunicationsHandler
                     /* check if message has been decoded and if there is a AVCLAN message handler */
                     if ((SLIPDecoderObject.IsDecodeComplete) && (null != SendAVCLANMessageHandler))
                     {
+                        SLIPMessage slip = SLIPDecoderObject.getSlipMessage();
+
+                        if ((slip.RawMessage[6] == 0x11) && (slip.RawMessage[7] == 0x01) && (slip.RawMessage[8] == 0x45))
+                        {
+                            switch(ExtendedPIDSView.Source)
+                            {
+                                case 0xC6:
+                                    slip = HFToneSlip;
+                                    break;
+
+                                case 0x6D:
+                                    slip = HFTalkSlip;
+                                    break;
+
+                                default:
+                                    break;
+                            }
+                        }
+
+                        MessageContainer msg = new MessageContainer(slip, MessageType.TX_TO_DEVICE_FROM_SNIFFER);
+
                         /* Enqueue message into AVCLAN handler */
-                        SendAVCLANMessageHandler(new MessageContainer(SLIPDecoderObject.getSlipMessage(), MessageType.TX_TO_DEVICE_FROM_SNIFFER));
+                        SendAVCLANMessageHandler(msg);
                     }
 
                     if (pending_bytes > 0)

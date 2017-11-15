@@ -30,7 +30,7 @@ namespace BlueBoxTool
             tabControl.Selected += new TabControlEventHandler(tabControlDiagnosticsSelected);
             this.FormClosing += new FormClosingEventHandler(formClosingEvent);
 
-            SnifferCmcHandler = new SnifferHandler();
+            SnifferCmcHandler = new SnifferHandler(ExtendedPIDSView);
             SnifferCmcHandler.startSnifferHandler();
 
             BlueBoxCmcHandler = new AVCLANHandler();

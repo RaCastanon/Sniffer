@@ -20,13 +20,20 @@ namespace DiagnosticTool.GUIViews
         private Timer PeriodicMessageTimer;
         private Timer testCase_1;
         private Timer testCase_2;
+        private Timer testCase_3;
         private Dictionary<int, string> TimeSettings;
         /* Logic related variables */
         private byte[] NodeAVCLANAddress = null;
         private uint StateStep = 0;
         private uint vol_cnt = 0;
         private uint InitialStep = 0;
-        private byte[] F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E };
+        private byte[] F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E }; /*Volume response*/
+        private byte[] Source_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x11, 0x8F, 0x00, 0x00}; /* Source change response*/
+        private byte[] Device_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x6D, 0x83, 0x00}; /* HF device change response*/
+        private int upDown = 1; /* 0 = down, 1 = up */
+        private int HFdevice = 0; /* Range 0 - 5 */
+        private int audioSource; /* 0 = TONE, 1 = TALK */
+        private bool response_rx = false;
 
         /// <summary>
         /// 
@@ -51,6 +58,11 @@ namespace DiagnosticTool.GUIViews
             testCase_2.Tick += new EventHandler(testCase_2_TimerEvent);
             testCase_2.Interval = 100;
             testCase_2.Enabled = false;
+
+            testCase_3 = new Timer();
+            testCase_3.Tick += new EventHandler(testCase_3_TimerEvent);
+            testCase_3.Interval = 100;
+            testCase_3.Enabled = false;
 
             // configure time settings combobox
             TimeSettings = new Dictionary<int, string>();
@@ -117,13 +129,7 @@ namespace DiagnosticTool.GUIViews
                 DisplayDataHandler.displayData(message_type,
                     bb_message.TimeStampString + " - " + message_rx.ToString() + CRLF);
 
-                isStatusDifferent = CompareMessage(bb_message.MessageData, bb_message.MessageLength);
-
-                if(isStatusDifferent)
-                {
-                    DisplayDataHandler.displayData(DiagnosticTool.GUIViews.GUI_MessageType.Error, "Expected:" + BitConverter.ToString(F5_Status).Replace("-", " ") + CRLF);
-                }
-
+                CompareMessage(bb_message.MessageData, bb_message.MessageLength); 
             }
             else if (BlueBoxMessage.INTF_CNTRL_CMD == bb_message.MessageType)
             {
@@ -276,6 +282,8 @@ namespace DiagnosticTool.GUIViews
                     testCase_1.Enabled = false;
                     testCase_2.Stop();
                     testCase_2.Enabled = false;
+                    testCase_3.Stop();
+                    testCase_3.Enabled = false;
                     StateStep = 0;
                 }
             }
@@ -293,6 +301,8 @@ namespace DiagnosticTool.GUIViews
                 testCase_1.Enabled = false;
                 testCase_2.Stop();
                 testCase_2.Enabled = false;
+                testCase_3.Stop();
+                testCase_3.Enabled = false;
                 StateStep = 0;
             }
         }
@@ -323,7 +333,7 @@ namespace DiagnosticTool.GUIViews
             }           
         }
 
-        private bool CompareMessage(byte[] message, int lenght)
+        private void CompareMessage(byte[] message, int lenght)
         {
             uint index;
 
@@ -333,11 +343,41 @@ namespace DiagnosticTool.GUIViews
                 {
                     if (message[index] != F5_Status[index])
                     {
-                        return true;
+                        DisplayDataHandler.displayData(DiagnosticTool.GUIViews.GUI_MessageType.Error, "Expected:" + BitConverter.ToString(F5_Status).Replace("-", " ") + CRLF);
+                        return;
                     }
                 }
             }
-            return false;
+
+            if ((message[3] == 0x74) && (message[4] == 0x11) && (message[5] == 0x8F))
+            {
+                response_rx = true;
+
+                for (index = 3; index < lenght; index++)
+                {
+                    if (message[index] != Source_Status[index])
+                    {
+                        DisplayDataHandler.displayData(DiagnosticTool.GUIViews.GUI_MessageType.Error, "Expected:" + BitConverter.ToString(Source_Status).Replace("-", " ") + CRLF);
+                        return;
+                    }
+                }
+                
+            }
+
+            if ((message[3] == 0x74) && (message[4] == 0x6D) && (message[5] == 0x83))
+            {
+                response_rx = true;
+
+                for (index = 3; index < lenght; index++)
+                {
+                    if (message[index] != Device_Status[index])
+                    {
+                        DisplayDataHandler.displayData(DiagnosticTool.GUIViews.GUI_MessageType.Error, "Expected:" + BitConverter.ToString(Device_Status).Replace("-", " ") + CRLF);
+                        return;
+                    }
+                }                
+            }
+
         }
 
         private void timerEvent(object sender, EventArgs e)
@@ -364,6 +404,10 @@ namespace DiagnosticTool.GUIViews
                             break;
 
                         case "0011":
+                            StateStep = InitialStep;
+                            testCase_3.Interval = 10;
+                            testCase_3.Start();
+                            testCase_3.Enabled = true;
                             break;
 
                         default:
@@ -553,6 +597,193 @@ namespace DiagnosticTool.GUIViews
                     sendMessage(SourceHFTone_msg);
                     testCase_2.Interval = 50;
                     StateStep = 6;
+                    break;
+
+                default:
+                    break;
+
+            }
+        }
+
+        private void testCase_3_TimerEvent(object sender, EventArgs e)
+        {
+            string PersonalInitPrep_msg = "010100070440005601BA00";
+            string PersonalInitExce_msg = "010100070440005601BA01";
+            string SourceCDP_msg = "0101000704400011748E62";
+            string SourceHFTone_msg = "0101000704400011748EC6";
+            string SourceHFTalk_msg = "0101000704400011748E6D";
+            string SelectHFDevice0_msg = "010100070440006D749300";
+            string SelectHFDevice1_msg = "010100070440006D749301";
+            string SelectHFDevice2_msg = "010100070440006D749302";
+            string SelectHFDevice3_msg = "010100070440006D749303";
+            string SelectHFDevice4_msg = "010100070440006D749304";
+            string SelectHFDevice5_msg = "010100070440006D749305";
+            string VolumeUp_msg = "0101000704400025749C01";
+            string VolumeDown_msg = "0101000704400025749D01";
+
+            switch (StateStep)
+            {
+                case 0:
+                    sendMessage(PersonalInitPrep_msg);
+                    testCase_3.Interval = 100;
+                    StateStep = 1;
+
+                    upDown = 1;
+                    HFdevice = 0;
+                    audioSource = 0;
+                    InitialStep = 4;
+                    response_rx = false;
+                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E };
+                    Source_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x11, 0x8F, 0x00, 0x00 }; /* Source change response*/
+                    Device_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x6D, 0x83, 0x00 }; /* HF device change response*/
+                    break;
+
+                case 1:
+                    sendMessage(PersonalInitExce_msg);
+                    testCase_3.Interval = 100;
+                    StateStep = 2;
+                    break;
+
+                case 2:
+                    sendMessage(SourceHFTone_msg);
+                    Source_Status[6] = 0xC6;
+                    testCase_3.Interval = 100;
+                    StateStep = 3;
+                    break;
+
+                case 3:
+                    sendMessage(SelectHFDevice0_msg);
+                    Device_Status[6] = 0x00;
+                    testCase_3.Interval = 100;
+                    StateStep = 0xFFFFFFFF;
+                    break;
+
+                /* Test Steps*/
+                case 4:
+                    if(upDown == 1)
+                    {
+                        sendMessage(VolumeUp_msg);
+                        F5_Status[6 + (HFdevice * 2) + audioSource]++;
+
+                        if(F5_Status[6 + (HFdevice * 2) + audioSource] == 0x3F)
+                        {
+                            upDown = 0;
+                        }
+                    }
+                    else if (upDown == 0)
+                    {
+                        sendMessage(VolumeDown_msg);
+                        F5_Status[6 + (HFdevice * 2) + audioSource]--;
+
+                        if (F5_Status[6 + (HFdevice * 2) + audioSource] == 0x00)
+                        {
+                            upDown = 1;
+                        }
+                    }
+
+                    testCase_3.Interval = 100;
+                    StateStep = 5;
+                    break;
+
+                case 5:
+                    
+                    switch (audioSource)
+                    {
+                        case 0:
+                            sendMessage(SourceHFTalk_msg);
+                            Source_Status[6] = 0x6D;
+                            audioSource = 1;
+                            break;
+
+                        case 1:
+                            sendMessage(SourceHFTone_msg);
+                            Source_Status[6] = 0xC6;
+                            audioSource = 0;
+                            break;
+
+                        default:
+                            break;
+                    }                    
+                    
+                    testCase_3.Interval = 10;
+                    StateStep = 6;
+                    break;
+
+                case 6:
+                    if(response_rx == true)
+                    {
+                        response_rx = false;
+                        StateStep = 7;
+                        testCase_3.Interval = 10;
+                    }
+                    else
+                    {
+                        testCase_3.Interval = 10;
+                    }
+                    break;
+
+                case 7:
+                    if(audioSource == 0)
+                    {
+                        switch (HFdevice)
+                        {
+                            case 0:
+                                sendMessage(SelectHFDevice1_msg);
+                                Device_Status[6] = 0x01;
+                                HFdevice = 1;
+                                break;
+
+                            case 1:
+                                sendMessage(SelectHFDevice2_msg);
+                                Device_Status[6] = 0x02;
+                                HFdevice = 2;
+                                break;
+
+                            case 2:
+                                sendMessage(SelectHFDevice3_msg);
+                                Device_Status[6] = 0x03;
+                                HFdevice = 3;
+                                break;
+
+                            case 3:
+                                sendMessage(SelectHFDevice4_msg);
+                                Device_Status[6] = 0x04;
+                                HFdevice = 4;
+                                break;
+
+                            case 4:
+                                sendMessage(SelectHFDevice5_msg);
+                                Device_Status[6] = 0x05;
+                                HFdevice = 5;
+                                break;
+
+                            case 5:
+                                sendMessage(SelectHFDevice0_msg);
+                                Device_Status[6] = 0x00;
+                                HFdevice = 0;
+                                break;
+
+                            default:
+                                break;
+                        }
+                    }
+                    
+                    
+                    testCase_3.Interval = 30;
+                    StateStep = 8;
+                    break;
+
+                case 8:
+                    if (response_rx == true)
+                    {
+                        response_rx = false;
+                        StateStep = 9;
+                        testCase_3.Interval = 10;
+                    }
+                    else
+                    {
+                        testCase_3.Interval = 10;
+                    }
                     break;
 
                 default:

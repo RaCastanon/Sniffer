@@ -35,12 +35,7 @@ namespace DiagnosticTool.GUIViews
         private int HFdevice = 0; /* Range 0 - 5 */
         private int audioSource; /* 0 = TONE, 1 = TALK */
         private bool response_rx = false;
-
-        private uint vol_dev_00 = 0x1E;
-        private uint vol_dev_01 = 0x1E;
-        private uint vol_dev_02 = 0x1E;
-        private uint vol_dev_03 = 0x1E;
-        private uint vol_dev_04 = 0x1E;
+        private const int MAXIMUM_AUDIO_SOURCE = 17;
 
         /// <summary>
         /// 
@@ -393,6 +388,7 @@ namespace DiagnosticTool.GUIViews
                     {
                         case "0001":
                             StateStep = InitialStep;
+                            testCase_1.Interval = 100;
                             testCase_1.Start();
                             testCase_1.Enabled = true;
                             break;
@@ -436,119 +432,140 @@ namespace DiagnosticTool.GUIViews
             string prep_msg       = "010100070440005601BA00";
             string exec_msg       = "010100070440005601BA01";
             string HF_TalkSrc_msg = "0101000704400011748E6D";
+            string HF_ToneSrc_msg = "0101000704400011748EC6";
             string vol_up_msg     = "0101000704400025749C01";
-            string HF_dev0_msg    = "010100070440006D74F600";
-            string HF_dev1_msg    = "010100070440006D74F601";
-            string HF_dev2_msg    = "010100070440006D74F602";
-            string HF_dev3_msg    = "010100070440006D74F603";
-            string HF_dev4_msg    = "010100070440006D74F604";
+            string vol_dw_msg     = "0101000804400025749D01";
+            string HF_dev0_msg    = "010100070440006D749300";
+            string HF_dev1_msg    = "010100070440006D749301";
+            string HF_dev2_msg    = "010100070440006D749302";
+            string HF_dev3_msg    = "010100070440006D749303";
+            string HF_dev4_msg    = "010100070440006D749304";
+            string HF_dev5_msg    = "010100070440006D749305";
 
             switch (StateStep)
             {
                 case 0: //Prep command
                     sendMessage(prep_msg);
-                    StateStep++;
+                    testCase_1.Interval = 100;
+                    StateStep = 1;
+
+                    upDown = 1;
+                    HFdevice = 0;
+                    audioSource = 1; //HF_Talk device
+                    response_rx = false;
+                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E };
+                    Source_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x11, 0x8F, 0x00, 0x00 }; /* Source change response*/
+                    Device_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x6D, 0x83, 0x00 }; /* HF device change response*/
                     break;
 
                 case 1: //Execute command
                     sendMessage(exec_msg);
-                    StateStep++;
+                    testCase_1.Interval = 100;
+                    StateStep = 2;
                     break;
 
-                case 2: //Set HF source cmd
-                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, (byte)vol_dev_04, 0x1E, (byte)vol_dev_03, 0x1E, (byte)vol_dev_02, 0x1E, (byte)vol_dev_01, 0x1E, (byte)vol_dev_00, 0x1E, 0x1E }; /*Volume response*/
+                case 2: //Set HF_talk source cmd
                     sendMessage(HF_TalkSrc_msg);
-                    StateStep++;
+                    testCase_1.Interval = 100;
+                    Source_Status[6] = 0x6D;
+                    StateStep = 3;
                     break;
 
-                case 3: //Set device 0 (Talk)
+                case 3: //Set device 0 (Tone)
                     sendMessage(HF_dev0_msg);
-                    StateStep++;
+                    testCase_1.Interval = 100;
+                    Device_Status[6] = 0x00;
+                    StateStep = 4;
+                    InitialStep = 4;
                     break;
 
+                /* Test Steps */
                 case 4: //Vol up command
-                    sendMessage(vol_up_msg);
-                    vol_cnt++;
-                    vol_dev_00++;
-                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, (byte)vol_dev_04, 0x1E, (byte)vol_dev_03, 0x1E, (byte)vol_dev_02, 0x1E, (byte)vol_dev_01, 0x1E, (byte)vol_dev_00, 0x1E, 0x1E}; /*Volume response*/
-                    if (5 <= vol_cnt)
+                    //Verify upDown bit
+                    if(1 == upDown)
                     {
-                        StateStep++;
-                        vol_cnt = 0;    
+                        sendMessage(vol_up_msg);
+                        F5_Status[6 + (HFdevice * 2) + audioSource]++;
+
+                        if (0x3F == F5_Status[MAXIMUM_AUDIO_SOURCE])
+                        {
+                            upDown = 0;
+                        }
                     }
+                    else if(0 == upDown)
+                    {
+                        sendMessage(vol_dw_msg);
+                        F5_Status[6 + (HFdevice * 2) + audioSource]--;
+
+                        if (0x00 == F5_Status[MAXIMUM_AUDIO_SOURCE])
+                        {
+                            upDown = 1;
+                        }
+                    }
+                    testCase_1.Interval = 100;
+                    StateStep = 5;
                     break;
 
                 case 5: //Change device
-                    sendMessage(HF_dev1_msg);
-                    StateStep++;
-                    break;
-
-                case 6: //Vol up command
-                    sendMessage(vol_up_msg);
-                    vol_cnt++;
-                    vol_dev_01++;
-                    if (5 <= vol_cnt)
+                    switch (HFdevice)
                     {
-                        StateStep++;
-                        vol_cnt = 0;
+                        case 0:
+                            sendMessage(HF_dev1_msg);
+                            Device_Status[6] = 0x01;
+                            HFdevice = 1;
+                            break;
+
+                        case 1:
+                            sendMessage(HF_dev2_msg);
+                            Device_Status[6] = 0x02;
+                            HFdevice = 2;
+                            break;
+
+                        case 2:
+                            sendMessage(HF_dev3_msg);
+                            Device_Status[6] = 0x03;
+                            HFdevice = 3;
+                            break;
+
+                        case 3:
+                            sendMessage(HF_dev4_msg);
+                            Device_Status[6] = 0x04;
+                            HFdevice = 4;
+                            break;
+
+                        case 4:
+                            sendMessage(HF_dev5_msg);
+                            Device_Status[6] = 0x05;
+                            HFdevice = 5;
+                            break;
+
+                        case 5:
+                            sendMessage(HF_dev0_msg);
+                            Device_Status[6] = 0x00;
+                            HFdevice = 0;
+                            break;
+
+                        default:
+                            break;
                     }
-                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, (byte)vol_dev_04, 0x1E, (byte)vol_dev_03, 0x1E, (byte)vol_dev_02, 0x1E, (byte)vol_dev_01, 0x1E, (byte)vol_dev_00, 0x1E, 0x1E }; /*Volume response*/
-                    break;
+                testCase_1.Interval = 100;
+                StateStep = 6;
+                break;
 
-                case 7: //Change device
-                    sendMessage(HF_dev2_msg);
-                    StateStep++;
-                    break;
-
-                case 8: //Vol up command
-                    sendMessage(vol_up_msg);
-                    vol_cnt++;
-                    vol_dev_02++;
-                    if (5 <= vol_cnt)
+                case 6: //Wait for amp response
+                    if (response_rx == true)
                     {
-                        StateStep++;
-                        vol_cnt = 0;
+                        response_rx = false;
+                        StateStep = 7;
+                        testCase_1.Interval = 10;
                     }
-                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, (byte)vol_dev_04, 0x1E, (byte)vol_dev_03, 0x1E, (byte)vol_dev_02, 0x1E, (byte)vol_dev_01, 0x1E, (byte)vol_dev_00, 0x1E, 0x1E }; /*Volume response*/
-                    break;
-
-                case 9: //Change device
-                    sendMessage(HF_dev3_msg);
-                    StateStep++;
-                    break;
-
-                case 10: //Vol up command
-                    sendMessage(vol_up_msg);
-                    vol_cnt++;
-                    vol_dev_03++;
-                    if (5 <= vol_cnt)
+                    else
                     {
-                        StateStep++;
-                        vol_cnt = 0;
+                        testCase_1.Interval = 10;
                     }
-                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, (byte)vol_dev_04, 0x1E, (byte)vol_dev_03, 0x1E, (byte)vol_dev_02, 0x1E, (byte)vol_dev_01, 0x1E, (byte)vol_dev_00, 0x1E, 0x1E }; /*Volume response*/
-                    break;
-
-                case 11: //Change device
-                    sendMessage(HF_dev4_msg);
-                    StateStep++;
-                    break;
-
-                case 12: //Vol up command
-                    sendMessage(vol_up_msg);
-                    vol_cnt++;
-                    vol_dev_04++;
-                    if (5 <= vol_cnt)
-                    {
-                        StateStep++;
-                        vol_cnt = 0;
-                    }
-                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, (byte)vol_dev_04, 0x1E, (byte)vol_dev_03, 0x1E, (byte)vol_dev_02, 0x1E, (byte)vol_dev_01, 0x1E, (byte)vol_dev_00, 0x1E, 0x1E }; /*Volume response*/
                     break;
 
                 default:
-                    testCase_1.Enabled = false;
-                    InitialStep = 2;
                     break;
             }
         }

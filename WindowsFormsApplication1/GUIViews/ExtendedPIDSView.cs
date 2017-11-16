@@ -414,25 +414,20 @@ namespace DiagnosticTool.GUIViews
             }
         }
 
+        /*
+            Case 0001
+            - Set audio source to HF Tone or HF Talk
+            - Select HF device 1
+            - Every 100 ms:
+                -Increase/decrease volume
+                -Switch to next HF device (rotate from last to first device)
+                -Repeat
+        */
         private void testCase_1_TimerEvent(object sender, EventArgs e)
         {
-            /*
-             * Vol up msg     = 0101000804400025749D01
-             * Vol down msg   = 0101000804400025749C01
-             * Prep msg       = 010100070440005601BA00
-             * Exec msg       = 010100070440005601BA01
-             * Source change  = 0101000704400011748E6D  ///HF_Talk
-             * Source change  = 0101000704400011748EC6  ///HF_Ring
-             * Source change  = 010100080440006D74F600  ///HF_device_00
-             * Source change  = 010100080440006D74F601  ///HF_device_01
-             * Source change  = 010100080440006D74F602  ///HF_device_02
-             * Source change  = 010100080440006D74F603  ///HF_device_03
-             * Source change  = 010100080440006D74F604  ///HF_device_04
-             */
             string prep_msg       = "010100070440005601BA00";
             string exec_msg       = "010100070440005601BA01";
             string HF_TalkSrc_msg = "0101000704400011748E6D";
-            string HF_ToneSrc_msg = "0101000704400011748EC6";
             string vol_up_msg     = "0101000704400025749C01";
             string vol_dw_msg     = "0101000804400025749D01";
             string HF_dev0_msg    = "010100070440006D749300";
@@ -570,62 +565,124 @@ namespace DiagnosticTool.GUIViews
             }
         }
 
+        /*
+            Case 0002
+            - Set audio source to HF Tone
+            - Select HF device 1
+            - Every 100 ms:
+                -Set audio source to HF Tone
+                -Increase/decrease volume
+                -Switch to HF TALK
+                -Increase/decrease volume
+                -Repeat
+        */
         private void testCase_2_TimerEvent(object sender, EventArgs e)
         {
-            string PersonalInitPrep_msg = "010100070440005601BA00";
-            string PersonalInitExce_msg = "010100070440005601BA01";
-            string SourceCDP_msg = "0101000704400011748E62";
-            string SourceHFTone_msg = "0101000704400011748EC6";
-            string SourceHFTalk_msg = "0101000704400011748E6D";
-            string SelectHFDevice0_msg = "010100070440006D749300";
-            string SelectHFDevice1_msg = "010100070440006D749301";
-            string SelectHFDevice2_msg = "010100070440006D749302";
-            string SelectHFDevice3_msg = "010100070440006D749303";
-            string SelectHFDevice4_msg = "010100070440006D749304";
-            string SelectHFDevice5_msg = "010100070440006D749305";
-            string VolumeUp_msg = "0101000704400025749C01";
-            string VolumeDown_msg = "0101000704400025749D01";
+            string prep_msg       = "010100070440005601BA00";
+            string exec_msg       = "010100070440005601BA01";
+            string HF_TalkSrc_msg = "0101000704400011748E6D";
+            string HF_Tone_msg    = "0101000704400011748EC6";
+            string vol_up_msg     = "0101000704400025749C01";
+            string vol_dw_msg     = "0101000804400025749D01";
+            string HF_dev0_msg    = "010100070440006D749300";
+
+            HFdevice = 0; //This test will only be performed in one device
 
             switch (StateStep)
             {
-                case 0:
-                    sendMessage(SourceHFTone_msg);
+                //Set amp at default conditions
+                case 0: //Prep msg
+                    sendMessage(prep_msg);
                     testCase_2.Interval = 100;
                     StateStep = 1;
 
-                    InitialStep = 2;
                     F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E };
                     break;
 
-                case 1:
-                    sendMessage(SelectHFDevice0_msg);
+                case 1: //Exec msg
+                    sendMessage(exec_msg);
                     testCase_2.Interval = 100;
                     StateStep = 2;
                     break;
-
-                /* Test Steps*/
-                case 2:
-                    sendMessage(VolumeUp_msg);                    
-                    testCase_2.Interval = 50;
+                    
+                case 2: //Set tone audio source
+                    sendMessage(HF_Tone_msg);                    
+                    testCase_2.Interval = 100;
                     StateStep = 3;
+                    audioSource = 0;
+                    Source = 0xC6;
+                    Source_Status[6] = 0xC6;
                     break;
 
-                case 3:
-                    sendMessage(SourceHFTalk_msg);
-                    testCase_2.Interval = 50;
+                case 3: //Send device 0 msg
+                    sendMessage(HF_dev0_msg);
+                    testCase_2.Interval = 100;
                     StateStep = 4;
+                    InitialStep = 4;
                     break;
 
-                case 4:
-                    sendMessage(VolumeUp_msg);
-                    testCase_2.Interval = 50;
+                /*Init test*/
+                case 4: //Send volume command
+                    //Verify upDown bit
+                    if (1 == upDown)
+                    {
+                        sendMessage(vol_up_msg);
+                        F5_Status[6 + (HFdevice * 2) + audioSource]++;
+
+                        if (0x3F == F5_Status[7]) //Verify volume overload on the device 0
+                        {
+                            upDown = 0;
+                        }
+                    }
+                    else if (0 == upDown)
+                    {
+                        sendMessage(vol_dw_msg);
+                        F5_Status[6 + (HFdevice * 2) + audioSource]--;
+
+                        if (0x00 == F5_Status[7]) //Verify volume overload on the device 0
+                        {
+                            upDown = 1;
+                        }
+                    }
+                    testCase_1.Interval = 100;
                     StateStep = 5;
                     break;
 
-                case 5:
-                    sendMessage(SourceHFTone_msg);
-                    testCase_2.Interval = 50;
+                case 5: //Send audio source change command
+                    switch (audioSource)
+                    {
+                        case 0:
+                            sendMessage(HF_TalkSrc_msg);
+                            Source = 0x6D;
+                            Source_Status[6] = 0x6D;
+                            audioSource = 1;
+                            break;
+
+                        case 1:
+                            sendMessage(HF_Tone_msg);
+                            Source = 0xC6;
+                            Source_Status[6] = 0xC6;
+                            audioSource = 0;
+                            break;
+
+                        default:
+                            break;
+                    }
+                    testCase_2.Interval = 100;
                     StateStep = 6;
+                    break;
+
+                case 6:
+                    if (response_rx == true)
+                    {
+                        response_rx = false;
+                        StateStep = 7;
+                        testCase_2.Interval = 10;
+                    }
+                    else
+                    {
+                        testCase_2.Interval = 10;
+                    }
                     break;
 
                 default:

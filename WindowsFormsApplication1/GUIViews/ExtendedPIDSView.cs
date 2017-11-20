@@ -36,10 +36,6 @@ namespace DiagnosticTool.GUIViews
         private uint vol_cnt = 0;
         private uint InitialStep = 0;
 
-        private byte off_time = 0;
-        private byte on_time = 0;
-        private byte cycles = 0;
-
         private byte[] F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E }; /*Volume response*/
         private byte[] Source_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x11, 0x8F, 0x00, 0x00 }; /* Source change response*/
         private byte[] Device_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x6D, 0x83, 0x00 }; /* HF device change response*/
@@ -87,7 +83,7 @@ namespace DiagnosticTool.GUIViews
 
             testCase_6 = new Timer();
             testCase_6.Tick += new EventHandler(testCase_6_TimerEvent);
-            testCase_6.Interval = 10000;
+            testCase_6.Interval = 3000; 
             testCase_6.Enabled = false;
 
             // configure time settings combobox
@@ -968,25 +964,32 @@ namespace DiagnosticTool.GUIViews
        */
         private void testCase_6_TimerEvent(object sender, EventArgs e)
         {
-            string base_ext_beep_notif = "01010009044000002961000000";
-            int index = base_ext_beep_notif.IndexOf("61000000");
-            char[] data = base_ext_beep_notif.ToCharArray();
+            string base_ext_beep_notif  = "01010009044000002961050101";// 61 op_code, 05 cycles, 01 period on time, 01 period off time
+            string ext_beep_notif_mod_2 = "01010009044000002961070203";
+            string ext_beep_notif_mod_3 = "01010009044000002961080302";
 
+            //Timer setup interval for 1 second
             switch (StateStep)
             {
                 case 0:
                     sendMessage(base_ext_beep_notif);
-                    on_time++;
-                    off_time++;
-                    cycles++;
-                    testCase_6.Interval = 100;
+                    testCase_6.Interval = 1000;
                     StateStep = 1;
                     break;
                 //Increase cycles, on duration and off duration
                 case 1:
-                    on_time++;
-                    off_time++;
-                    cycles++;
+                    sendMessage(ext_beep_notif_mod_2);
+                    StateStep = 2;
+                    break;
+                //Increase cycles, on duration and off duration
+                case 2:
+                    sendMessage(ext_beep_notif_mod_3);
+                    StateStep = 3;
+                    StateStep = InitialStep;
+                    break;
+                default:
+                    InitialStep = 0;
+                    testCase_6.Interval = 2000;
                     break;
 
             }

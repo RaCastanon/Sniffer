@@ -31,6 +31,7 @@ namespace DiagnosticTool.GUIViews
         private Timer testCase_7;
         private Timer testCase_8;
         private Timer testCase_9;
+        private Timer testCase_10;
 
         private Dictionary<int, string> TimeSettings;
         /* Logic related variables */
@@ -103,6 +104,11 @@ namespace DiagnosticTool.GUIViews
             testCase_9.Tick += new EventHandler(testCase_9_TimerEvent);
             testCase_9.Interval = 1000;
             testCase_9.Enabled = false;
+
+            testCase_10 = new Timer();
+            testCase_10.Tick += new EventHandler(testCase_10_TimerEvent);
+            testCase_10.Interval = 1000;
+            testCase_10.Enabled = false;
 
             // configure time settings combobox
             TimeSettings = new Dictionary<int, string>();
@@ -333,6 +339,8 @@ namespace DiagnosticTool.GUIViews
                     testCase_8.Enabled = false;
                     testCase_9.Stop();
                     testCase_9.Enabled = false;
+                    testCase_10.Stop();
+                    testCase_10.Enabled = false;
                     StateStep = 0;
                 }
             }
@@ -362,6 +370,8 @@ namespace DiagnosticTool.GUIViews
                 testCase_8.Enabled = false;
                 testCase_9.Stop();
                 testCase_9.Enabled = false;
+                testCase_10.Stop();
+                testCase_10.Enabled = false;
                 StateStep = 0;
             }
         }
@@ -492,6 +502,11 @@ namespace DiagnosticTool.GUIViews
 
                         case "1001":
                             testCase_9.Start();
+                            StateStep = InitialStep;
+                            break;
+
+                        case "1010":
+                            testCase_10.Start();
                             StateStep = InitialStep;
                             break;
 
@@ -1099,7 +1114,7 @@ namespace DiagnosticTool.GUIViews
         private void testCase_8_TimerEvent(object sender, EventArgs e)
         {
             string beep_250_ms = "0101000704400000296002"; //beep_250ms
-            string IPABeep     = "0101000904400000296C500101";// IPA beep 10 cycles
+            string IPABeep = "0101000904400000296C500101";// IPA beep 10 cycles
 
             switch (StateStep)
             {
@@ -1155,6 +1170,44 @@ namespace DiagnosticTool.GUIViews
                 case 2:
                     sendMessage(IPABeep);
                     testCase_9.Interval = 3000;
+                    StateStep = 3;
+                    break;
+                default:
+                    break;
+            }
+        }
+        /*
+           Case 1010
+           - send beep_notification
+           - send extended_beep notification, before previous beep finishes
+           - send IPA beep 
+           - repeat
+       */
+        private void testCase_10_TimerEvent(object sender, EventArgs e)
+        {
+            string beep_notif_250ms = "0101000704400000296002";
+            string base_ext_beep_notif = "01010009044000002961070101";// 61 op_code, 05 cycles, 01 period on time, 01 period off time
+            string IPABeep = "0101000904400000296C500101";// IPA beep 10 cycles
+
+            switch (StateStep)
+            {
+                //send extended beep command
+                case 0:
+                    sendMessage(beep_notif_250ms);
+                    StateStep = 1;
+                    InitialStep = 0;
+                    testCase_10.Interval = 100;
+                    break;
+                //send another extended beep command
+                case 1:
+                    sendMessage(base_ext_beep_notif);
+                    testCase_10.Interval = 100;
+                    StateStep = 2;
+                    break;
+                //send IPA beep command
+                case 2:
+                    sendMessage(IPABeep);
+                    testCase_10.Interval = 3000;
                     StateStep = 3;
                     break;
                 default:

@@ -24,6 +24,7 @@ namespace DiagnosticTool.GUIViews
         private Timer testCase_1;
         private Timer testCase_2;
         private Timer testCase_3;
+        private Timer testCase_4;
 
         //Beeps test cases
         private Timer testCase_5;
@@ -32,6 +33,9 @@ namespace DiagnosticTool.GUIViews
         private Timer testCase_8;
         private Timer testCase_9;
         private Timer testCase_10;
+
+        //Timer UG8
+        private Timer testCaseUG8;
 
         private Dictionary<int, string> TimeSettings;
         /* Logic related variables */
@@ -47,6 +51,7 @@ namespace DiagnosticTool.GUIViews
         private int HFdevice = 0; /* Range 0 - 5 */
         private int audioSource; /* 0 = TONE, 1 = TALK */
         private bool response_rx = false;
+        private bool vol_sent = false;
         private const int MAXIMUM_AUDIO_SOURCE = 17;
 
         /// <summary>
@@ -77,6 +82,11 @@ namespace DiagnosticTool.GUIViews
             testCase_3.Tick += new EventHandler(testCase_3_TimerEvent);
             testCase_3.Interval = 100;
             testCase_3.Enabled = false;
+
+            testCase_4 = new Timer();
+            testCase_4.Tick += new EventHandler(testCase_4_TimerEvent);
+            testCase_4.Interval = 100;
+            testCase_4.Enabled = false;
 
             /*Timers for Beep tests*/
 
@@ -109,6 +119,14 @@ namespace DiagnosticTool.GUIViews
             testCase_10.Tick += new EventHandler(testCase_10_TimerEvent);
             testCase_10.Interval = 1000;
             testCase_10.Enabled = false;
+
+            //Christian
+            testCaseUG8 = new Timer();
+            testCaseUG8.Tick += new EventHandler(testCase_UG8_TimerEvent);
+            testCaseUG8.Interval = 1000;
+            testCaseUG8.Enabled = false;
+
+
 
             // configure time settings combobox
             TimeSettings = new Dictionary<int, string>();
@@ -329,6 +347,8 @@ namespace DiagnosticTool.GUIViews
                     testCase_2.Enabled = false;
                     testCase_3.Stop();
                     testCase_3.Enabled = false;
+                    testCase_4.Stop();
+                    testCase_4.Enabled = false;
                     testCase_5.Stop();
                     testCase_5.Enabled = false;
                     testCase_6.Stop();
@@ -341,6 +361,8 @@ namespace DiagnosticTool.GUIViews
                     testCase_9.Enabled = false;
                     testCase_10.Stop();
                     testCase_10.Enabled = false;
+                    testCaseUG8.Stop();
+                    testCaseUG8.Enabled = false;
                     StateStep = 0;
                 }
             }
@@ -360,6 +382,8 @@ namespace DiagnosticTool.GUIViews
                 testCase_2.Enabled = false;
                 testCase_3.Stop();
                 testCase_3.Enabled = false;
+                testCase_4.Stop();
+                testCase_4.Enabled = false;
                 testCase_5.Stop();
                 testCase_5.Enabled = false;
                 testCase_6.Stop();
@@ -372,6 +396,9 @@ namespace DiagnosticTool.GUIViews
                 testCase_9.Enabled = false;
                 testCase_10.Stop();
                 testCase_10.Enabled = false;
+
+                testCaseUG8.Stop();
+                testCaseUG8.Enabled = false;
                 StateStep = 0;
             }
         }
@@ -407,6 +434,11 @@ namespace DiagnosticTool.GUIViews
             uint index;
             if ((message[2] == 0x74) && (message[3] == 0x31) && (message[4] == 0xF5))
             {
+                if (vol_sent == true)
+                {
+                    response_rx = true; /* Only T4. Remove for T3 */
+                }
+
                 for (index = 2; index < lenght; index++)
                 {
                     if (message[index] != F5_Status[index])
@@ -476,6 +508,10 @@ namespace DiagnosticTool.GUIViews
                             break;
 
                         case "0100":
+                            StateStep = InitialStep;
+                            testCase_4.Interval = 10;
+                            testCase_4.Start();
+                            testCase_4.Enabled = true;
                             break;
 
                         /*Beeps test cases*/
@@ -507,6 +543,11 @@ namespace DiagnosticTool.GUIViews
 
                         case "1010":
                             testCase_10.Start();
+                            StateStep = InitialStep;
+                            break;
+
+                        case "1011":
+                            testCaseUG8.Start();
                             StateStep = InitialStep;
                             break;
 
@@ -567,6 +608,7 @@ namespace DiagnosticTool.GUIViews
                     testCase_1.Interval = 100;
                     Source_Status[6] = 0x6D;
                     StateStep = 3;
+                    Source = 0x6D;
                     break;
 
                 case 3: //Set device 0 (Tone)
@@ -980,6 +1022,106 @@ namespace DiagnosticTool.GUIViews
             }
         }
 
+        private void testCase_4_TimerEvent(object sender, EventArgs e)
+        {
+            string PersonalInitPrep_msg = "010100070440005601BA00";
+            string PersonalInitExce_msg = "010100070440005601BA01";
+            string SourceCDP_msg = "0101000704400011748E62";
+            string SourceHFTone_msg = "0101000704400011748EC6";
+            string SourceHFTalk_msg = "0101000704400011748E6D";
+            string SelectHFDevice0_msg = "010100070440006D749300";
+            string SelectHFDevice1_msg = "010100070440006D749301";
+            string SelectHFDevice2_msg = "010100070440006D749302";
+            string SelectHFDevice3_msg = "010100070440006D749303";
+            string SelectHFDevice4_msg = "010100070440006D749304";
+            string SelectHFDevice5_msg = "010100070440006D749305";
+            string VolumeUp_msg = "0101000704400025749C01";
+            string VolumeDown_msg = "0101000704400025749D01";
+
+            switch (StateStep)
+            {
+                case 0:
+                    sendMessage(PersonalInitPrep_msg);
+                    testCase_4.Interval = 100;
+                    StateStep = 1;
+
+                    upDown = 100;
+                    HFdevice = 0;
+                    audioSource = 0;
+                    InitialStep = 4;
+                    response_rx = false;
+                    F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E };
+                    Source_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x11, 0x8F, 0x00, 0x00 }; /* Source change response*/
+                    Device_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x6D, 0x83, 0x00 }; /* HF device change response*/
+                    break;
+
+                case 1:
+                    sendMessage(PersonalInitExce_msg);
+                    testCase_4.Interval = 100;
+                    StateStep = 2;
+                    break;
+
+                case 2:
+                    sendMessage(SourceHFTone_msg);
+                    Source_Status[6] = 0xC6;
+                    Source = 0xC6;
+                    testCase_4.Interval = 100;
+                    StateStep = 3;
+                    break;
+
+                case 3:
+                    sendMessage(SelectHFDevice0_msg);
+                    Device_Status[6] = 0x00;
+                    testCase_4.Interval = 100;
+                    StateStep = 0xFFFFFFFF;
+                    break;
+
+                /* Test Steps*/
+                case 4:
+                    vol_sent = false;
+                    sendMessage(PersonalInitPrep_msg);
+                    testCase_4.Interval = 100;
+                    StateStep = 5;
+                    break;
+
+                case 5:
+                    sendMessage(PersonalInitExce_msg);
+                    testCase_4.Interval = 10;
+
+                    StateStep = 6;
+                    break;
+
+                case 6:
+                    sendMessage(VolumeUp_msg);
+                    F5_Status[6] = 0x1F;
+                    vol_sent = true;
+
+                    testCase_4.Interval = 100;
+                    StateStep = 7;
+                    break;
+
+                case 7:
+                    F5_Status[6] = 0x1E;
+                    //if (response_rx == true)
+                    //{
+                    //    F5_Status[6] = 0x1E;
+
+                    //    response_rx = false;
+                    //    StateStep = 9;
+                    //    testCase_3.Interval = 10;
+                    //}
+                    //else
+                    //{
+                    //    testCase_3.Interval = 10;
+                    //}
+                    break;
+
+                default:
+                    break;
+
+            }
+
+        }
         /*
            Case 0101
            - send beep 
@@ -1210,6 +1352,19 @@ namespace DiagnosticTool.GUIViews
                 default:
                     break;
             }
+        }
+
+        /*
+           Case 1011
+           - send beep_notification
+           - send extended_beep notification, before previous beep finishes
+           - send IPA beep 
+           - repeat
+       */
+        private void testCase_UG8_TimerEvent(object sender, EventArgs e)
+        {
+            string source_fm = "";
+
         }
     }
 }

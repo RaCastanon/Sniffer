@@ -820,7 +820,6 @@ namespace DiagnosticTool.GUIViews
                     upDown = 1;
                     HFdevice = 0;
                     audioSource = 0;
-                    InitialStep = 4;
                     response_rx = false;
                     F5_Status = new byte[] { 0x00, 0x00, 0x74, 0x31, 0xF5, 0x03, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E };
                     Source_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x11, 0x8F, 0x00, 0x00 }; /* Source change response*/
@@ -844,7 +843,8 @@ namespace DiagnosticTool.GUIViews
                     sendMessage(SelectHFDevice0_msg);
                     Device_Status[6] = 0x00;
                     testCase_3.Interval = 100;
-                    StateStep = 0xFFFFFFFF;
+                    StateStep = 4;
+                    InitialStep = 4;
                     break;
 
                 /* Test Steps*/
@@ -854,7 +854,7 @@ namespace DiagnosticTool.GUIViews
                         sendMessage(VolumeUp_msg);
                         F5_Status[6 + (HFdevice * 2) + audioSource]++;
 
-                        if (F5_Status[6 + (HFdevice * 2) + audioSource] == 0x3F)
+                        if (F5_Status[MAXIMUM_AUDIO_SOURCE] == 0x3F)
                         {
                             upDown = 0;
                         }
@@ -864,7 +864,7 @@ namespace DiagnosticTool.GUIViews
                         sendMessage(VolumeDown_msg);
                         F5_Status[6 + (HFdevice * 2) + audioSource]--;
 
-                        if (F5_Status[6 + (HFdevice * 2) + audioSource] == 0x00)
+                        if (F5_Status[MAXIMUM_AUDIO_SOURCE] == 0x00)
                         {
                             upDown = 1;
                         }
@@ -896,7 +896,7 @@ namespace DiagnosticTool.GUIViews
                             break;
                     }
 
-                    testCase_3.Interval = 10;
+                    testCase_3.Interval = 100;
                     StateStep = 6;
                     break;
 
@@ -958,9 +958,7 @@ namespace DiagnosticTool.GUIViews
                                 break;
                         }
                     }
-
-
-                    testCase_3.Interval = 30;
+                    testCase_3.Interval = 100;
                     StateStep = 8;
                     break;
 
@@ -979,7 +977,6 @@ namespace DiagnosticTool.GUIViews
 
                 default:
                     break;
-
             }
         }
 
@@ -1122,11 +1119,11 @@ namespace DiagnosticTool.GUIViews
                     sendMessage(beep_250_ms);
                     StateStep = 1;
                     InitialStep = 0;
-                    testCase_8.Interval = 200;
+                    testCase_8.Interval = 100;
                     break;
                 case 1:
                     sendMessage(beep_250_ms);
-                    testCase_8.Interval = 200;
+                    testCase_8.Interval = 100;
                     StateStep = 2;
                     break;
                 case 2:

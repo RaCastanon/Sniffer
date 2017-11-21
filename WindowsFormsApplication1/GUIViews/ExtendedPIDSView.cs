@@ -28,6 +28,9 @@ namespace DiagnosticTool.GUIViews
         //Beeps test cases
         private Timer testCase_5;
         private Timer testCase_6;
+        private Timer testCase_7;
+        private Timer testCase_8;
+        private Timer testCase_9;
 
         private Dictionary<int, string> TimeSettings;
         /* Logic related variables */
@@ -83,8 +86,23 @@ namespace DiagnosticTool.GUIViews
 
             testCase_6 = new Timer();
             testCase_6.Tick += new EventHandler(testCase_6_TimerEvent);
-            testCase_6.Interval = 3000; 
+            testCase_6.Interval = 3000;
             testCase_6.Enabled = false;
+
+            testCase_7 = new Timer();
+            testCase_7.Tick += new EventHandler(testCase_7_TimerEvent);
+            testCase_7.Interval = 1000;
+            testCase_7.Enabled = false;
+
+            testCase_8 = new Timer();
+            testCase_8.Tick += new EventHandler(testCase_8_TimerEvent);
+            testCase_8.Interval = 1000;
+            testCase_8.Enabled = false;
+
+            testCase_9 = new Timer();
+            testCase_9.Tick += new EventHandler(testCase_9_TimerEvent);
+            testCase_9.Interval = 1000;
+            testCase_9.Enabled = false;
 
             // configure time settings combobox
             TimeSettings = new Dictionary<int, string>();
@@ -309,6 +327,12 @@ namespace DiagnosticTool.GUIViews
                     testCase_5.Enabled = false;
                     testCase_6.Stop();
                     testCase_6.Enabled = false;
+                    testCase_7.Stop();
+                    testCase_7.Enabled = false;
+                    testCase_8.Stop();
+                    testCase_8.Enabled = false;
+                    testCase_9.Stop();
+                    testCase_9.Enabled = false;
                     StateStep = 0;
                 }
             }
@@ -332,6 +356,12 @@ namespace DiagnosticTool.GUIViews
                 testCase_5.Enabled = false;
                 testCase_6.Stop();
                 testCase_6.Enabled = false;
+                testCase_7.Stop();
+                testCase_7.Enabled = false;
+                testCase_8.Stop();
+                testCase_8.Enabled = false;
+                testCase_9.Stop();
+                testCase_9.Enabled = false;
                 StateStep = 0;
             }
         }
@@ -438,6 +468,7 @@ namespace DiagnosticTool.GUIViews
                         case "0100":
                             break;
 
+                        /*Beeps test cases*/
                         case "0101":
                             testCase_5.Interval = 30;
                             testCase_5.Start();
@@ -446,6 +477,22 @@ namespace DiagnosticTool.GUIViews
 
                         case "0110":
                             testCase_6.Start();
+                            StateStep = InitialStep;
+                            break;
+
+                        case "0111":
+                            testCase_7.Start();
+                            StateStep = InitialStep;
+                            break;
+
+                        case "1000":
+                            testCase_8.Start();
+                            StateStep = InitialStep;
+                            break;
+
+                        case "1001":
+                            testCase_9.Start();
+                            StateStep = InitialStep;
                             break;
 
                         default:
@@ -964,7 +1011,7 @@ namespace DiagnosticTool.GUIViews
        */
         private void testCase_6_TimerEvent(object sender, EventArgs e)
         {
-            string base_ext_beep_notif  = "01010009044000002961050101";// 61 op_code, 05 cycles, 01 period on time, 01 period off time
+            string base_ext_beep_notif = "01010009044000002961050101";// 61 op_code, 05 cycles, 01 period on time, 01 period off time
             string ext_beep_notif_mod_2 = "01010009044000002961070203";
             string ext_beep_notif_mod_3 = "01010009044000002961080302";
 
@@ -992,6 +1039,126 @@ namespace DiagnosticTool.GUIViews
                     testCase_6.Interval = 2000;
                     break;
 
+            }
+        }
+        /*
+           Case 0111
+           - send beep_notification
+           - send extended_beep_notif, before previous beep finishes
+           - repeat
+       */
+        private void testCase_7_TimerEvent(object sender, EventArgs e)
+        {
+            string beep_250_ms = "0101000704400000296002"; //beep_250ms
+            string base_ext_beep_notif = "01010009044000002961050101";// 61 op_code, 05 cycles, 01 period on time, 01 period off time
+
+            switch (StateStep)
+            {
+                case 0:
+                    sendMessage(beep_250_ms);
+                    StateStep = 1;
+                    InitialStep = 0;
+                    testCase_7.Interval = 200;
+                    break;
+                case 1:
+                    sendMessage(beep_250_ms);
+                    testCase_7.Interval = 200;
+                    StateStep = 2;
+                    break;
+                case 2:
+                    sendMessage(base_ext_beep_notif);
+                    testCase_7.Interval = 800;
+                    StateStep = 3;
+                    break;
+                case 3:
+                    sendMessage(base_ext_beep_notif);
+                    testCase_7.Interval = 800;
+                    StateStep = 4;
+                    break;
+                case 4:
+                    sendMessage(beep_250_ms);
+                    testCase_7.Interval = 200;
+                    StateStep = 5;
+                    break;
+                case 5:
+                    sendMessage(base_ext_beep_notif);
+                    testCase_7.Interval = 800;
+                    StateStep = 6;
+                    break;
+                default:
+                    break;
+            }
+        }
+        /*
+           Case 1000
+           - send beep_notification
+           - send another beep notification, before previous beep finishes
+           - send IPA beep 
+           - repeat
+       */
+        private void testCase_8_TimerEvent(object sender, EventArgs e)
+        {
+            string beep_250_ms = "0101000704400000296002"; //beep_250ms
+            string IPABeep     = "0101000904400000296C500101";// IPA beep 10 cycles
+
+            switch (StateStep)
+            {
+                case 0:
+                    sendMessage(beep_250_ms);
+                    StateStep = 1;
+                    InitialStep = 0;
+                    testCase_8.Interval = 200;
+                    break;
+                case 1:
+                    sendMessage(beep_250_ms);
+                    testCase_8.Interval = 200;
+                    StateStep = 2;
+                    break;
+                case 2:
+                    sendMessage(IPABeep);
+                    testCase_8.Interval = 1000;
+                    StateStep = 3;
+                    break;
+                default:
+                    break;
+            }
+        }
+        /*
+           Case 1001
+           - send extended_beep_notification
+           - send another beep notification, before previous beep finishes
+           - send IPA beep 
+           - repeat
+       */
+        private void testCase_9_TimerEvent(object sender, EventArgs e)
+        {
+            string base_ext_beep_notif_1 = "01010009044000002961050101";// 61 op_code, 05 cycles, 01 period on time, 01 period off time
+            string base_ext_beep_notif_2 = "01010009044000002961070202";
+            string IPABeep = "0101000904400000296C500101";// IPA beep 10 cycles
+
+            switch (StateStep)
+            {
+                //send extended beep command
+                case 0:
+                    sendMessage(base_ext_beep_notif_1);
+                    StateStep = 1;
+                    InitialStep = 0;
+                    testCase_9.Interval = 300;
+                    break;
+                //send another extended beep command
+                case 1:
+                    sendMessage(base_ext_beep_notif_2);
+                    testCase_9.Interval = 100;
+                    StateStep = 2;
+                    break;
+                //send IPA beep command
+                case 2:
+                    sendMessage(IPABeep);
+                    testCase_9.Interval = 3000;
+                    StateStep = 3;
+                    break;
+                default:
+                    break;
             }
         }
     }

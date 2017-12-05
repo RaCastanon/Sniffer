@@ -34,6 +34,13 @@ namespace DiagnosticTool.GUIViews
         private Timer testCase_9;
         private Timer testCase_10;
 
+        //Using terminal
+        private Timer testCase_11;
+
+        private Timer testCase_13;
+        private Timer testCase_14;
+        private Timer testCase_15;
+
         //Timer UG8
         private Timer testCaseUG8;
 
@@ -53,6 +60,8 @@ namespace DiagnosticTool.GUIViews
         private bool response_rx = false;
         private bool vol_sent = false;
         private const int MAXIMUM_AUDIO_SOURCE = 17;
+        Random rnd = new Random();
+        private int randomSelector;
 
         /// <summary>
         /// 
@@ -126,6 +135,25 @@ namespace DiagnosticTool.GUIViews
             testCaseUG8.Interval = 1000;
             testCaseUG8.Enabled = false;
 
+            testCase_11 = new Timer();
+            testCase_11.Tick += new EventHandler(testCase_11_TimerEvent);
+            testCase_11.Interval = 10;
+            testCase_11.Enabled = false;
+
+            testCase_13 = new Timer();
+            testCase_13.Tick += new EventHandler(testCase_13_TimerEvent);
+            testCase_13.Interval = 100;
+            testCase_13.Enabled = false;
+
+            testCase_14 = new Timer();
+            testCase_14.Tick += new EventHandler(testCase_14_TimerEvent);
+            testCase_14.Interval = 100;
+            testCase_14.Enabled = false;
+
+            testCase_15 = new Timer();
+            testCase_15.Tick += new EventHandler(testCase_15_TimerEvent);
+            testCase_15.Interval = 100;
+            testCase_15.Enabled = false;
 
 
             // configure time settings combobox
@@ -363,6 +391,15 @@ namespace DiagnosticTool.GUIViews
                     testCase_10.Enabled = false;
                     testCaseUG8.Stop();
                     testCaseUG8.Enabled = false;
+
+                    testCase_11.Stop();
+                    testCase_11.Enabled = false;
+                    testCase_13.Stop();
+                    testCase_13.Enabled = false;
+                    testCase_14.Stop();
+                    testCase_14.Enabled = false;
+                    testCase_15.Stop();
+                    testCase_15.Enabled = false;
                     StateStep = 0;
                 }
             }
@@ -399,6 +436,14 @@ namespace DiagnosticTool.GUIViews
 
                 testCaseUG8.Stop();
                 testCaseUG8.Enabled = false;
+                testCase_11.Stop();
+                testCase_11.Enabled = false;
+                testCase_13.Stop();
+                testCase_13.Enabled = false;
+                testCase_14.Stop();
+                testCase_14.Enabled = false;
+                testCase_15.Stop();
+                testCase_15.Enabled = false;
                 StateStep = 0;
             }
         }
@@ -549,6 +594,32 @@ namespace DiagnosticTool.GUIViews
                         case "1011":
                             testCaseUG8.Start();
                             StateStep = InitialStep;
+                            break;
+
+                        case "1100":
+                            testCase_11.Start();
+                            //StateStep = InitialStep;
+							break;
+							
+                        case "1101":
+                            randomSelector = rnd.Next(0, 7);
+                            testCase_13.Interval = 1;
+                            testCase_13.Start();
+                            testCase_13.Enabled = true;
+                            break;
+
+                        case "1110":
+                            randomSelector = rnd.Next(7, 10);
+                            testCase_14.Interval = 1;
+                            testCase_14.Start();
+                            testCase_14.Enabled = true;
+                            break;
+
+                        case "1111":
+                            randomSelector = rnd.Next(0, 10);
+                            testCase_15.Interval = 1;
+                            testCase_15.Start();
+                            testCase_15.Enabled = true;
                             break;
 
                         default:
@@ -1332,7 +1403,7 @@ namespace DiagnosticTool.GUIViews
             {
                 //send extended beep command
                 case 0:
-                    sendMessage(beep_notif_250ms);
+                    sendMessage(base_ext_beep_notif);
                     StateStep = 1;
                     InitialStep = 0;
                     testCase_10.Interval = 100;
@@ -1365,6 +1436,224 @@ namespace DiagnosticTool.GUIViews
         {
             string source_fm = "";
 
+        }
+
+        /*
+          Case 1100
+          - send beep_notification
+          - send extended_beep notification, before previous beep finishes
+          - send IPA beep 
+          - repeat
+      */
+        private void testCase_11_TimerEvent(object sender, EventArgs e)
+        {
+            string base_ext_beep_notif_1 = "01010009044000002961070101";// 61 op_code, 05 cycles, 01 period on time, 01 period off time
+            string base_ext_beep_notif_2 = "01010009044000002961070101";
+            string IPABeep = "0101000904400000296C500101";// IPA beep 10 cycles
+
+            switch (StateStep)
+            {
+                //send extended beep command
+                case 0:
+                    sendMessage(base_ext_beep_notif_1);
+                    StateStep = 1;
+                    InitialStep = 0;
+                    testCase_10.Interval = 10;
+                    break;
+                //send another extended beep command
+                case 1:
+                    sendMessage(base_ext_beep_notif_2);
+                    testCase_10.Interval = 10;
+                    StateStep = 2;
+                    break;
+                //send IPA beep command
+                case 2:
+                    sendMessage(IPABeep);
+                    testCase_10.Interval = 10;
+                    StateStep = 0;
+                    break;
+                default:
+                    break;
+            }
+        }
+		
+        private void testCase_13_TimerEvent(object sender, EventArgs e)
+        {
+            string Beep_Off_msg = "0101000704400000296000";
+            string Beep_1_msg = "0101000704400000296001";
+            string Beep_2_msg = "0101000704400000296002";
+            string Beep_3_msg = "0101000704400000296003";
+            string Beep_4_msg = "0101000704400000296004";
+            string Beep_5_msg = "0101000704400000296005";
+            string ExtendedBeep1_msg = "01010009044000002961100101";
+            string ExtendedBeep2_msg = "01010009044000002961100202";
+            string ExtendedBeep3_msg = "01010009044000002961100303";
+            string ForcedBeep_Off_msg = "0101000704400000296400";
+            string ForcedBeep_1_msg = "0101000704400000296401";
+            string ForcedBeep_2_msg = "0101000704400000296402";
+            string ForcedBeep_3_msg = "0101000704400000296403";
+            string ForcedBeep_4_msg = "0101000704400000296404";
+            string ForcedBeep_5_msg = "0101000704400000296405";
+            string BeepEnable_msg = "01010006044000002968";
+            string BeepDisable_msg = "01010006044000002969";
+            string IPABeep_Inst_msg = "0101000904400000296C500101"; /*Instruct cycle  10 cycles*/
+            string IPABeep_Stop_msg = "0101000904400000296C900101";   /*Stop + 10 cycles*/
+            string IPABeep_Cont_msg = "0101000904400000296CD00101"; /* Continue + 10 cycles */
+            string SepFuncRequest_msg = "010100060440000029E0";
+            string StatusRequest_msg = "010100060440000029E2";
+
+            switch (randomSelector)
+            {
+                case 0:
+                    sendMessage(Beep_Off_msg);
+                    break;
+
+                case 1:
+                    sendMessage(Beep_1_msg);
+                    break;
+
+                case 2:
+                    sendMessage(Beep_3_msg);
+                    break;
+
+                case 3:
+                    sendMessage(ExtendedBeep1_msg);
+                    break;
+
+                case 4:
+                    sendMessage(ExtendedBeep3_msg);
+                    break;
+
+                case 5:
+                    sendMessage(ForcedBeep_2_msg);
+                    break;
+
+                case 6:
+                    sendMessage(ForcedBeep_4_msg);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        private void testCase_14_TimerEvent(object sender, EventArgs e)
+        {
+            string Beep_Off_msg = "0101000704400000296000";
+            string Beep_1_msg = "0101000704400000296001";
+            string Beep_2_msg = "0101000704400000296002";
+            string Beep_3_msg = "0101000704400000296003";
+            string Beep_4_msg = "0101000704400000296004";
+            string Beep_5_msg = "0101000704400000296005";
+            string ExtendedBeep1_msg = "01010009044000002961100101";
+            string ExtendedBeep2_msg = "01010009044000002961100202";
+            string ExtendedBeep3_msg = "01010009044000002961100303";
+            string ForcedBeep_Off_msg = "0101000704400000296400";
+            string ForcedBeep_1_msg = "0101000704400000296401";
+            string ForcedBeep_2_msg = "0101000704400000296402";
+            string ForcedBeep_3_msg = "0101000704400000296403";
+            string ForcedBeep_4_msg = "0101000704400000296404";
+            string ForcedBeep_5_msg = "0101000704400000296405";
+            string BeepEnable_msg = "01010006044000002968";
+            string BeepDisable_msg = "01010006044000002969";
+            string IPABeep_Inst_msg = "0101000904400000296C500101"; /*Instruct cycle  10 cycles*/
+            string IPABeep_Stop_msg = "0101000904400000296C900101";   /*Stop + 10 cycles*/
+            string IPABeep_Cont_msg = "0101000904400000296CD00101"; /* Continue + 10 cycles */
+            string SepFuncRequest_msg = "010100060440000029E0";
+            string StatusRequest_msg = "010100060440000029E2";
+
+            switch (randomSelector)
+            {
+                
+                case 7:
+                    sendMessage(IPABeep_Inst_msg);
+                    break;
+
+                case 8:
+                    sendMessage(IPABeep_Stop_msg);
+                    break;
+
+                case 9:
+                    sendMessage(IPABeep_Cont_msg);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        private void testCase_15_TimerEvent(object sender, EventArgs e)
+        {
+            string Beep_Off_msg = "0101000704400000296000";
+            string Beep_1_msg = "0101000704400000296001";
+            string Beep_2_msg = "0101000704400000296002";
+            string Beep_3_msg = "0101000704400000296003";
+            string Beep_4_msg = "0101000704400000296004";
+            string Beep_5_msg = "0101000704400000296005";
+            string ExtendedBeep1_msg = "01010009044000002961100101";
+            string ExtendedBeep2_msg = "01010009044000002961100202";
+            string ExtendedBeep3_msg = "01010009044000002961100303";
+            string ForcedBeep_Off_msg = "0101000704400000296400";
+            string ForcedBeep_1_msg = "0101000704400000296401";
+            string ForcedBeep_2_msg = "0101000704400000296402";
+            string ForcedBeep_3_msg = "0101000704400000296403";
+            string ForcedBeep_4_msg = "0101000704400000296404";
+            string ForcedBeep_5_msg = "0101000704400000296405";
+            string BeepEnable_msg = "01010006044000002968";
+            string BeepDisable_msg = "01010006044000002969";
+            string IPABeep_Inst_msg = "0101000904400000296C500101"; /*Instruct cycle  10 cycles*/
+            string IPABeep_Stop_msg = "0101000904400000296C900101";   /*Stop + 10 cycles*/
+            string IPABeep_Cont_msg = "0101000904400000296CD00101"; /* Continue + 10 cycles */
+            string SepFuncRequest_msg = "010100060440000029E0";
+            string StatusRequest_msg = "010100060440000029E2";
+
+            testCase_15.Stop();
+
+            switch (randomSelector)
+            {
+                case 0:
+                    sendMessage(Beep_Off_msg);                    
+                    break;
+
+                case 1:
+                    sendMessage(Beep_1_msg);
+                    break;
+
+                case 2:
+                    sendMessage(Beep_3_msg);
+                    break;
+
+                case 3:
+                    sendMessage(ExtendedBeep1_msg);
+                    break;
+
+                case 4:
+                    sendMessage(ExtendedBeep3_msg);
+                    break;
+
+                case 5:
+                    sendMessage(ForcedBeep_2_msg);
+                    break;
+
+                case 6:
+                    sendMessage(ForcedBeep_4_msg);
+                    break;
+
+                case 7:
+                    sendMessage(IPABeep_Inst_msg);
+                    break;
+
+                case 8:
+                    sendMessage(IPABeep_Stop_msg);
+                    break;
+
+                case 9:
+                    sendMessage(IPABeep_Cont_msg);
+                    break;
+
+                default:
+                    break;
+            }
         }
     }
 }

@@ -41,6 +41,9 @@ namespace DiagnosticTool.GUIViews
         private Timer testCase_14;
         private Timer testCase_15;
 
+        //Specific timer for testing sequences of corruption
+        private Timer testCase_16;
+
         //Timer UG8
         private Timer testCaseUG8;
 
@@ -132,7 +135,7 @@ namespace DiagnosticTool.GUIViews
             //Christian
             testCaseUG8 = new Timer();
             testCaseUG8.Tick += new EventHandler(testCase_UG8_TimerEvent);
-            testCaseUG8.Interval = 1000;
+            testCaseUG8.Interval = 3000;
             testCaseUG8.Enabled = false;
 
             testCase_11 = new Timer();
@@ -155,6 +158,10 @@ namespace DiagnosticTool.GUIViews
             testCase_15.Interval = 100;
             testCase_15.Enabled = false;
 
+            testCase_16 = new Timer();
+            testCase_16.Tick += new EventHandler(testCase_16_TimerEvent);
+            testCase_16.Interval = 50;
+            testCase_16.Enabled = false;
 
             // configure time settings combobox
             TimeSettings = new Dictionary<int, string>();
@@ -400,6 +407,9 @@ namespace DiagnosticTool.GUIViews
                     testCase_14.Enabled = false;
                     testCase_15.Stop();
                     testCase_15.Enabled = false;
+                    testCase_16.Stop();
+                    testCase_16.Enabled = false;
+
                     StateStep = 0;
                 }
             }
@@ -444,6 +454,9 @@ namespace DiagnosticTool.GUIViews
                 testCase_14.Enabled = false;
                 testCase_15.Stop();
                 testCase_15.Enabled = false;
+                testCase_16.Stop();
+                testCase_16.Enabled = false;
+
                 StateStep = 0;
             }
         }
@@ -593,14 +606,14 @@ namespace DiagnosticTool.GUIViews
 
                         case "1011":
                             testCaseUG8.Start();
-                            StateStep = InitialStep;
+                            //StateStep = InitialStep;
                             break;
 
                         case "1100":
                             testCase_11.Start();
                             //StateStep = InitialStep;
-							break;
-							
+                            break;
+
                         case "1101":
                             randomSelector = rnd.Next(0, 7);
                             testCase_13.Interval = 1;
@@ -620,6 +633,12 @@ namespace DiagnosticTool.GUIViews
                             testCase_15.Interval = 1;
                             testCase_15.Start();
                             testCase_15.Enabled = true;
+                            break;
+
+                        case "010000":
+                            testCase_16.Interval = 50;
+                            testCase_16.Start();
+                            testCase_16.Enabled = true;
                             break;
 
                         default:
@@ -1427,15 +1446,89 @@ namespace DiagnosticTool.GUIViews
 
         /*
            Case 1011
-           - send beep_notification
-           - send extended_beep notification, before previous beep finishes
-           - send IPA beep 
-           - repeat
+           - change source CD - FM
+           - change source FM - CD
        */
         private void testCase_UG8_TimerEvent(object sender, EventArgs e)
         {
-            string source_fm = "";
+            // Five messages needs to be sended for every source change
+            // FM source change messages
+            string source_FM_1 = "010100080440001174422100";
+            string source_FM_2 = "01010006044011014560";
+            string source_FM_3 = "0101000704400011748E60";
+            string source_FM_4 = "010100060440002574B5";
+            string source_FM_5 = "010100060440002574A8";
 
+            // CD source changge messages
+            string source_CD_1 = "010100080440001174422100";
+            string source_CD_2 = "01010006044011014562";
+            string source_CD_3 = "0101000704400011748E62";
+            string source_CD_4 = "010100060440002574B5";
+            string source_CD_5 = "010100060440002574A8";
+            Source_Status = new byte[] { 0x00, 0x00, 0x00, 0x74, 0x11, 0x8F, 0x00, 0x00 }; /* Source change response*/
+
+            switch (StateStep)
+            {
+                case 0:
+                    sendMessage(source_FM_1);
+                    StateStep = 1;
+                    testCaseUG8.Interval = 100;
+                    break;
+
+                case 1:
+                    sendMessage(source_FM_2);
+                    StateStep = 2;
+                    break;
+
+                case 2:
+                    sendMessage(source_FM_3);
+                    Source = 0x60;
+                    Source_Status[6] = 0x60;
+                    StateStep = 3;
+                    break;
+
+                case 3:
+                    sendMessage(source_FM_4);
+                    StateStep = 4;
+                    break;
+
+                case 4:
+                    sendMessage(source_FM_5);
+                    StateStep = 5;
+                    testCaseUG8.Interval = 100;
+                    break;
+
+                case 5:
+                    sendMessage(source_CD_1);
+                    StateStep = 6;
+                    testCaseUG8.Interval = 100;
+                    break;
+
+                case 6:
+                    sendMessage(source_CD_2);
+                    StateStep = 7;
+                    break;
+
+                case 7:
+                    sendMessage(source_CD_3);
+                    StateStep = 8;
+                    break;
+
+                case 8:
+                    sendMessage(source_CD_4);
+                    StateStep = 9;
+                    break;
+
+                case 9:
+                    sendMessage(source_CD_5);
+                    StateStep = 10;
+                    testCaseUG8.Interval = 100;
+                    break;
+
+                default:
+                    StateStep = InitialStep;
+                    break;
+            }
         }
 
         /*
@@ -1476,7 +1569,10 @@ namespace DiagnosticTool.GUIViews
                     break;
             }
         }
-		
+        /*
+         Case 1101
+
+        */
         private void testCase_13_TimerEvent(object sender, EventArgs e)
         {
             string Beep_Off_msg = "0101000704400000296000";
@@ -1537,6 +1633,11 @@ namespace DiagnosticTool.GUIViews
             }
         }
 
+
+        /*
+         Case 1110
+
+        */
         private void testCase_14_TimerEvent(object sender, EventArgs e)
         {
             string Beep_Off_msg = "0101000704400000296000";
@@ -1564,7 +1665,7 @@ namespace DiagnosticTool.GUIViews
 
             switch (randomSelector)
             {
-                
+
                 case 7:
                     sendMessage(IPABeep_Inst_msg);
                     break;
@@ -1582,6 +1683,10 @@ namespace DiagnosticTool.GUIViews
             }
         }
 
+        /*
+         Case 1111
+
+        */
         private void testCase_15_TimerEvent(object sender, EventArgs e)
         {
             string Beep_Off_msg = "0101000704400000296000";
@@ -1612,7 +1717,7 @@ namespace DiagnosticTool.GUIViews
             switch (randomSelector)
             {
                 case 0:
-                    sendMessage(Beep_Off_msg);                    
+                    sendMessage(Beep_Off_msg);
                     break;
 
                 case 1:
@@ -1654,6 +1759,38 @@ namespace DiagnosticTool.GUIViews
                 default:
                     break;
             }
+        }
+
+        /*
+         Case 010000
+        */
+        private void testCase_16_TimerEvent(object sender, EventArgs e)
+        {
+            string IPABeep_Inst_msg = "0101000904400000296C500101"; /*Instruct cycle  10 cycles*/
+            string IPABeep_Stop_msg = "0101000904400000296C900101";   /*Stop + 10 cycles*/
+            
+            switch(StateStep)
+            {
+                case 0:
+                    sendMessage(IPABeep_Inst_msg);
+                    StateStep = 1;
+                    break;
+
+                case 1:
+                    sendMessage(IPABeep_Stop_msg);
+                    StateStep = 0;
+                    break;/*
+
+                case 2:
+                    sendMessage(IPABeep_Stop_msg);
+                    StateStep = 3;
+                    break;*/
+
+                default:
+                    StateStep = 0;
+                    break;
+            }
+
         }
     }
 }
